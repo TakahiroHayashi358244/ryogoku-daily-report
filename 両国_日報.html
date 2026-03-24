@@ -625,26 +625,30 @@ async function submitReport() {
 }
 
 async function sendToGAS(data) {
-  return new Promise((resolve, reject) => {
-    const params = new URLSearchParams();
-    params.append('action', 'addData');
-    params.append('data', JSON.stringify(data));
-    const url = config.scriptUrl + '?' + params.toString();
+  const params = new URLSearchParams();
+  params.append('action', 'addData');
+  params.append('data', JSON.stringify(data));
+  const url = config.scriptUrl + '?' + params.toString();
 
-    // iframe + fetch 二重送信（iOS対応）
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'display:none;width:0;height:0;';
-    iframe.src = url;
-    document.body.appendChild(iframe);
-
-    fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-cache' })
-      .catch(() => {});
-
-    setTimeout(() => {
-      iframe.parentNode && document.body.removeChild(iframe);
-      resolve();
-    }, 7000);
-  });
+  // fetchのみで送信（iframeとの二重送信を廃止）
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      mode: 'no-cors',
+      cache: 'no-cache'
+    });
+    return;
+  } catch(err) {
+    // no-corsでも例外が出る場合はscriptタグで送信
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = url + '&_t=' + Date.now();
+      script.onload = () => { script.remove(); resolve(); };
+      script.onerror = () => { script.remove(); resolve(); };
+      document.head.appendChild(script);
+      setTimeout(resolve, 8000);
+    });
+  }
 }
 
 function resetForm() {
