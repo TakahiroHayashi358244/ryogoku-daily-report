@@ -690,14 +690,37 @@ function loadConfig() {
   updateStatusUI();
 }
 
-function testConnection() {
+async function testConnection() {
   if (!config?.scriptUrl) { alert('URLを設定してください'); return; }
-  window.open(config.scriptUrl, '_blank');
-  setTimeout(() => {
-    const ok = confirm('新しいタブでJSONが表示されましたか？');
-    if (ok) { updateStatusUI(true); alert('✅ 接続成功！'); }
-    else alert('❌ URLを確認してください');
-  }, 2000);
+
+  const btn = document.querySelector('.btn-secondary');
+  if (btn) { btn.textContent = 'テスト中...'; btn.disabled = true; }
+
+  try {
+    const res = await fetch(config.scriptUrl, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    const json = await res.json();
+    if (json.success) {
+      updateStatusUI(true);
+      alert('✅ 接続成功！\nGASと正常に通信できています。');
+    } else {
+      alert('⚠️ GASから応答がありましたが異常です。\n' + json.message);
+    }
+  } catch (err) {
+    // CORSエラーはno-corsで再試行（成功とみなす）
+    try {
+      await fetch(config.scriptUrl, { method: 'GET', mode: 'no-cors', cache: 'no-cache' });
+      updateStatusUI(true);
+      alert('✅ 接続テスト完了！\nGASに接続できています。');
+    } catch (err2) {
+      alert('❌ 接続に失敗しました。\nURLを確認してください。\n\n' + err2.message);
+    }
+  } finally {
+    if (btn) { btn.textContent = '接続テスト'; btn.disabled = false; }
+  }
 }
 
 function updateStatusUI(forceOk) {
