@@ -421,15 +421,9 @@
 
 <script>
 // ============================================================
-// スタッフ定義（マスタ）
+// スタッフ定義（GASから動的取得）
 // ============================================================
-const STAFF = [
-  { name: '神谷言美',   type: 'fixed'  },
-  { name: '今井美菜代', type: 'hourly' },
-  { name: '大野',       type: 'hourly' },
-  { name: '渡辺',       type: 'hourly' },
-  { name: '柳原',       type: 'hourly' },
-];
+let STAFF = [];  // GASのスタッフシートから取得して設定
 
 // ============================================================
 // 状態
@@ -442,11 +436,52 @@ let logs   = [];
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   setTodayDate();
-  buildStaffList();
   loadConfig();
   loadLogs();
   renderLogs();
+  // GASからスタッフ一覧を取得してフォームを構築
+  fetchAndBuildStaff();
 });
+
+// GASからスタッフ一覧を取得
+async function fetchAndBuildStaff() {
+  const container = document.getElementById('staffList');
+
+  // キャッシュがあれば先に表示
+  const cached = localStorage.getItem('ryogoku_staff_cache');
+  if (cached) {
+    STAFF = JSON.parse(cached);
+    buildStaffList();
+  } else {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0;text-align:center;">読み込み中...</div>';
+  }
+
+  // GASが設定されていれば最新を取得
+  if (!config?.scriptUrl) return;
+
+  try {
+    const url = config.scriptUrl + '?action=getStaff';
+    const res = await fetch(url, { mode: 'cors', cache: 'no-cache' })
+      .catch(() => null);
+
+    if (res && res.ok) {
+      const json = await res.json();
+      if (json.success && json.data?.staff?.length) {
+        STAFF = json.data.staff;
+        localStorage.setItem('ryogoku_staff_cache', JSON.stringify(STAFF));
+        buildStaffList();
+        console.log('スタッフ一覧を更新:', STAFF.length + '名');
+      }
+    }
+  } catch (err) {
+    console.warn('スタッフ取得失敗（キャッシュを使用）:', err.message);
+  }
+
+  // GAS未設定でキャッシュもない場合はデフォルト表示
+  if (STAFF.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0;text-align:center;">設定タブでGAS URLを登録後、再読み込みしてください</div>';
+  }
+}
 
 function setTodayDate() {
   document.getElementById('date').value = new Date().toISOString().split('T')[0];
@@ -472,11 +507,11 @@ function buildStaffList() {
       <div class="staff-times">
         <div class="time-field">
           <label>開始時刻</label>
-          <input type="time" id="start-${i}" value="20:00" oninput="updatePreview()">
+          <input type="time" id="start-${i}" value="09:00" oninput="updatePreview()">
         </div>
         <div class="time-field">
           <label>終了時刻</label>
-          <input type="time" id="end-${i}" value="05:00" oninput="updatePreview()">
+          <input type="time" id="end-${i}" value="18:00" oninput="updatePreview()">
         </div>
       </div>` : ''}
     </div>
@@ -642,6 +677,8 @@ function saveConfig() {
   localStorage.setItem('ryogoku_config', JSON.stringify(config));
   updateStatusUI();
   alert('✅ 保存しました');
+  // 保存後にスタッフ一覧を再取得
+  fetchAndBuildStaff();
 }
 
 function loadConfig() {
