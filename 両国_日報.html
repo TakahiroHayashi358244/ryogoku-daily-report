@@ -405,7 +405,16 @@
 
   <!-- ========== 設定タブ ========== -->
   <div id="settings-tab" class="tab-content">
-    <div class="card">
+    <div class="card" id="password-gate" style="display:none;">
+      <div class="card-title">パスワード認証</div>
+      <div class="form-row">
+        <label>パスワード</label>
+        <input type="password" id="settingsPassword" placeholder="パスワードを入力" style="width:100%;padding:13px 14px;border:1.5px solid #e0ddd8;border-radius:12px;font-size:17px;background:var(--pale);">
+      </div>
+      <button class="btn-submit" onclick="checkPassword()" style="margin-top:8px;">認証</button>
+    </div>
+
+    <div class="card" id="settings-content" style="display:none;">
       <div class="card-title">GAS 接続設定</div>
       <div class="setting-group">
         <label class="setting-label">Apps Script URL</label>
@@ -414,6 +423,13 @@
       </div>
       <button class="btn-submit" onclick="saveConfig()" style="margin-top:0;">保存</button>
       <button class="btn-secondary" onclick="testConnection()">接続テスト</button>
+
+      <div class="card-title" style="margin-top:20px;">パスワード変更</div>
+      <div class="setting-group">
+        <label class="setting-label">新しいパスワード</label>
+        <input type="password" id="newPassword" placeholder="新しいパスワード" style="width:100%;padding:13px 14px;border:1.5px solid #e0ddd8;border-radius:12px;font-size:17px;background:var(--pale);">
+      </div>
+      <button class="btn-secondary" onclick="changePassword()">パスワード変更</button>
     </div>
   </div>
 
@@ -514,7 +530,6 @@ function buildStaffList() {
         <span class="staff-name">${s.name}</span>
         <span class="staff-type ${s.type}">${s.type === 'fixed' ? '月額固定' : '時給'}</span>
       </div>
-      ${s.type === 'hourly' ? `
       <div class="staff-times">
         <div class="time-field">
           <label>開始時刻</label>
@@ -524,7 +539,7 @@ function buildStaffList() {
           <label>終了時刻</label>
           <input type="time" id="end-${i}" value="18:00" oninput="updatePreview()">
         </div>
-      </div>` : ''}
+      </div>
     </div>
   `).join('');
 }
@@ -582,10 +597,9 @@ async function submitReport() {
   if (unitCount <= 0) { alert('個数を入力してください'); return; }
   if (staff.length === 0) { alert('出勤者を選択してください'); return; }
 
-  // 時刻未入力チェック（時給スタッフのみ）
+  // 時刻未入力チェック（全スタッフ）
   for (const s of staff) {
-    const master = STAFF.find(m => m.name === s.name);
-    if (master.type === 'hourly' && (!s.startTime || !s.endTime)) {
+    if (!s.startTime || !s.endTime) {
       alert(`${s.name} の時刻を入力してください`);
       return;
     }
@@ -668,13 +682,16 @@ function renderLogs() {
     container.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>送信履歴がありません</div>`;
     return;
   }
-  container.innerHTML = logs.map(r => {
+  container.innerHTML = logs.map((r, idx) => {
     const names = r.staff.map(s => s.name).join('、');
     return `
-      <div class="log-item ${r.synced ? 'synced' : ''}">
+      <div class="log-item ${r.synced ? 'synced' : ''}" id="log-item-${idx}">
         <div class="log-header">
           <span class="log-date">${r.date}</span>
-          <span class="log-badge ${r.synced ? 'synced' : 'pending'}">${r.synced ? '✓ 送信済' : '⏳ 未送信'}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="log-badge ${r.synced ? 'synced' : 'pending'}">${r.synced ? '✓ 送信済' : '⏳ 未送信'}</span>
+            <button onclick="deleteLog(${idx})" style="background:none;border:1px solid #e0ddd8;border-radius:6px;padding:3px 8px;font-size:11px;color:var(--muted);cursor:pointer;">削除</button>
+          </div>
         </div>
         <div class="log-row"><span class="log-key">個数</span><span class="log-val">${r.unitCount.toLocaleString()} 個</span></div>
         <div class="log-row"><span class="log-key">出勤者</span><span class="log-val">${names}</span></div>
@@ -754,6 +771,13 @@ function updateStatusUI(forceOk) {
 // ローカルストレージ
 // ============================================================
 function saveLogs() { localStorage.setItem('ryogoku_logs', JSON.stringify(logs)); }
+
+function deleteLog(idx) {
+  if (!confirm(`${logs[idx].date} のデータを削除しますか？`)) return;
+  logs.splice(idx, 1);
+  saveLogs();
+  renderLogs();
+}
 function loadLogs()  {
   const s = localStorage.getItem('ryogoku_logs');
   if (s) logs = JSON.parse(s);
@@ -768,6 +792,45 @@ function switchTab(name, btn) {
   document.getElementById(name + '-tab').classList.add('active');
   btn.classList.add('active');
   if (name === 'list') renderLogs();
+  if (name === 'settings') initSettingsTab();
+}
+
+// パスワード機能
+const DEFAULT_PASSWORD = '1124';
+
+function getPassword() {
+  return localStorage.getItem('ryogoku_password') || DEFAULT_PASSWORD;
+}
+
+function initSettingsTab() {
+  const authenticated = sessionStorage.getItem('settings_auth') === 'true';
+  document.getElementById('password-gate').style.display    = authenticated ? 'none'  : 'block';
+  document.getElementById('settings-content').style.display = authenticated ? 'block' : 'none';
+  if (!authenticated) {
+    document.getElementById('settingsPassword').value = '';
+    setTimeout(() => document.getElementById('settingsPassword').focus(), 100);
+  }
+}
+
+function checkPassword() {
+  const input = document.getElementById('settingsPassword').value;
+  if (input === getPassword()) {
+    sessionStorage.setItem('settings_auth', 'true');
+    document.getElementById('password-gate').style.display    = 'none';
+    document.getElementById('settings-content').style.display = 'block';
+  } else {
+    alert('パスワードが違います');
+    document.getElementById('settingsPassword').value = '';
+  }
+}
+
+function changePassword() {
+  const newPw = document.getElementById('newPassword').value.trim();
+  if (!newPw) { alert('パスワードを入力してください'); return; }
+  if (newPw.length < 4) { alert('4文字以上で設定してください'); return; }
+  localStorage.setItem('ryogoku_password', newPw);
+  document.getElementById('newPassword').value = '';
+  alert('✅ パスワードを変更しました');
 }
 </script>
 </body>
