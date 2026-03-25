@@ -890,12 +890,16 @@ function resizeImage(file, maxWidth) {
 
 async function callClaudeOcr(base64Data) {
   const gasUrl = CFG.gasUrl || GAS_DEFAULT;
-  const prompt = `この画像は日本の宅配便の送り状（伝票）です。ヤマト運輸・佐川急便・日本郵便・その他運送会社に対応しています。
+  const prompt = `この画像は日本の宅配便の送り状（返品伝票）です。
 以下の情報を読み取り、必ずJSON形式のみで返してください。説明文や記号を前後に含めないでください。
 
-{"tracking_number":"送り状番号（ハイフン含む数字列、なければnull）","sender_name":"差出人の氏名または会社名（なければnull）","sender_address":"差出人の住所（都道府県から番地まで、なければnull）"}
+{"tracking_number":"送り状番号","sender_name":"差出人名","sender_address":"差出人住所"}
 
-ヒント: ヤマト=「ご依頼主」欄・12桁、佐川=お届け先の反対側・12桁、郵便=「差出人」欄。読み取れない項目はnull。`;
+【読み取りの指針】
+- 送り状番号: 「お問い合わせ番号」「送り状番号」「伝票番号」などのラベルに対応する番号。バーコードの直下や右上付近にあることが多い。ハイフン区切りの場合はそのまま返す。
+- 差出人: 「ご依頼主」「差出人」「FROM」「Shipper」などのラベルに対応する氏名または会社名。お届け先（TO側）の名前は取得しない。
+- 差出人住所: 差出人欄に記載された都道府県から始まる住所。お届け先の住所は取得しない。
+- 読み取れない・判断できない項目はnullにする。`;
 
   const res = await fetch(gasUrl, {
     method: 'POST', headers: {'Content-Type':'text/plain'},
