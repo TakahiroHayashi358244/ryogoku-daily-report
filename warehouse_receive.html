@@ -120,6 +120,7 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
 .h-loc{display:inline-block;background:var(--ink);color:#fff;padding:1px 7px;border-radius:4px;font-size:0.68rem;margin-right:4px;font-family:'JetBrains Mono',monospace}
 .h-loc.pending{background:var(--warn)}
 .h-badge-ret{display:inline-block;background:var(--returned);color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;margin-right:4px}
+.h-badge-unret{display:inline-block;background:var(--accent);color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;margin-right:4px}
 
 .empty-hist{text-align:center;color:var(--ink2);font-size:0.8rem;padding:20px;border:1.5px dashed var(--border);border-radius:8px}
 
@@ -638,7 +639,7 @@ function renderHistory() {
   el.innerHTML = list.map(item => {
     const idx = history.indexOf(item);
     const locB = item.locPending ? `<span class="h-loc pending">未定</span>` : item.location ? `<span class="h-loc">${esc(item.location)}</span>` : '';
-    const retB = item.returned ? `<span class="h-badge-ret">返送済</span>` : '';
+    const retB = item.returned ? `<span class="h-badge-ret">返送済</span>` : `<span class="h-badge-unret">未返送</span>`;
     const descTxt = item.itemDescription ? ` <span style="font-weight:400;color:var(--ink2)">（${esc(item.itemDescription)}）</span>` : '';
 
     // 期限アラート計算
@@ -671,7 +672,7 @@ function renderHistory() {
         ${item.locPending ? `<button class="h-btn h-btn-loc" onclick="openLocModal(${idx})">📍 ロケ追加</button>` : ''}
         ${item.returned
           ? `<button class="h-btn h-btn-unreturn" onclick="toggleReturn(${idx})">↩ 返送取消</button>`
-          : `<button class="h-btn h-btn-return" onclick="openReturnModal(${idx})">📦 返送済み</button>`}
+          : `<button class="h-btn h-btn-return" onclick="openReturnModal(${idx})">📦 未返送</button>`}
       </div>
     </div>`;
   }).join('');
