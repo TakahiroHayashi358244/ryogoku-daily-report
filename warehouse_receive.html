@@ -397,14 +397,18 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
 <div class="modal-bg" id="syncModal">
   <div class="modal">
     <h3>シートから読み込む</h3>
-    <div class="modal-meta">スプレッドシートのどのデータを読み込みますか？</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn-use" onclick="syncFromGas('all')" style="background:var(--ink)">全件読み込む</button>
-      <button class="btn-use" onclick="syncFromGas('unreturned')" style="background:var(--accent)">未返送のみ</button>
-      <button class="btn-use" onclick="syncFromGas('returned')" style="background:var(--returned)">返送済みのみ</button>
+    <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
+    <div class="form-row">
+      <label>読み込む対象</label>
+      <select id="syncFilter">
+        <option value="all">全件</option>
+        <option value="unreturned">未返送のみ</option>
+        <option value="returned">返送済みのみ</option>
+      </select>
     </div>
     <div class="modal-btns">
-      <button class="btn-modal-cancel" style="flex:none;width:100%" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-ok" onclick="syncFromGas()">読み込む</button>
+      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -756,8 +760,10 @@ function syncToGas(entry) {
 // ════════════════════════════════════
 function openSyncModal() { document.getElementById('syncModal').classList.add('open'); }
 
-async function syncFromGas(filter = 'all') {
+async function syncFromGas() {
+  const filter = document.getElementById('syncFilter').value;
   closeModal('syncModal');
+
   const btn = document.getElementById('syncBtn');
   const statusEl = document.getElementById('syncStatus');
   const gasUrl = CFG.gasUrl || GAS_DEFAULT;
@@ -769,18 +775,16 @@ async function syncFromGas(filter = 'all') {
   statusEl.innerHTML = '<span class="spinner"></span>スプレッドシートから読み込み中...';
 
   try {
-    const url = `${gasUrl}?mode=getAll`;
-    const res = await fetch(url);
+    const res = await fetch(`${gasUrl}?mode=getAll`);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
 
     if (data.error) throw new Error(data.error);
     if (!data.rows || !data.rows.length) {
-      statusEl.innerHTML = 'データがありません';
-      return;
+      statusEl.innerHTML = 'データがありません'; return;
     }
 
-    // スプレッドシートの行をアプリのデータ形式に変換
+    // 行をアプリ形式に変換
     let imported = data.rows.map(r => ({
       id:              Date.now() + Math.random(),
       registeredAt:    r['登録日時']        || '',
@@ -804,22 +808,14 @@ async function syncFromGas(filter = 'all') {
     if (filter === 'unreturned') imported = imported.filter(i => !i.returned);
     if (filter === 'returned')   imported = imported.filter(i => i.returned);
 
-    // 既存データとマージ（送り状番号をキーに重複除去・シート優先）
-    const merged = [...imported];
-    history.forEach(local => {
-      const exists = imported.some(i => i.tracking && i.tracking === local.tracking);
-      if (!exists) merged.push(local);
-    });
-
-    // 到着日の降順でソート
-    merged.sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
-
-    history = merged;
+    // 到着日の降順でソート・キャッシュを完全置き換え
+    imported.sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
+    history = imported;
     save();
     renderHistory();
 
     const filterLabel = filter === 'unreturned' ? '未返送' : filter === 'returned' ? '返送済み' : '全件';
-    statusEl.innerHTML = `✓ ${filterLabel} ${imported.length}件を読み込みました（合計 ${merged.length}件）`;
+    statusEl.innerHTML = `✓ ${filterLabel} ${imported.length}件を読み込みました`;
     statusEl.style.color = 'var(--ok)';
     setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
 
