@@ -629,7 +629,8 @@ function saveEdit() {
   i.qty = parseInt(document.getElementById('em-qty').value)||1;
   const loc = document.getElementById('em-loc').value.trim();
   i.location = loc || null; i.locPending = !loc;
-  save(); renderHistory(); closeModal('editModal'); showToast('編集を保存しました');
+  save(); renderHistory(); closeModal('editModal');
+  syncToGas(i); showToast('編集を保存しました');
 }
 
 // LOC
@@ -644,7 +645,8 @@ function saveLocation() {
   const loc = document.getElementById('locModalInput').value.trim();
   if (!loc) { showToast('ロケーション番号を入力してください'); return; }
   history[locIdx].location = loc; history[locIdx].locPending = false;
-  save(); renderHistory(); closeModal('locModal'); showToast('ロケーションを登録しました');
+  save(); renderHistory(); closeModal('locModal');
+  syncToGas(history[locIdx]); showToast('ロケーションを登録しました');
 }
 
 // RETURN
@@ -659,13 +661,24 @@ function saveReturn() {
   history[retIdx].returned = true;
   history[retIdx].returnedDate = document.getElementById('rm-date').value;
   history[retIdx].returnNote = document.getElementById('rm-note').value.trim();
-  save(); renderHistory(); closeModal('returnModal'); showToast('返送済みにしました');
+  save(); renderHistory(); closeModal('returnModal');
+  syncToGas(history[retIdx]); showToast('返送済みにしました');
 }
 function toggleReturn(idx) {
   history[idx].returned = false; history[idx].returnedDate = null; history[idx].returnNote = null;
-  save(); renderHistory(); showToast('返送フラグを解除しました');
+  save(); renderHistory();
+  syncToGas(history[idx]); showToast('返送フラグを解除しました');
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// GAS同期（更新）
+function syncToGas(entry) {
+  const url = CFG.gasUrl || GAS_DEFAULT;
+  fetch(url, {
+    method: 'POST', headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ ...entry, mode: 'update' })
+  }).catch(console.error);
+}
 
 // CSV
 function exportCSV() {
