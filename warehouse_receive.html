@@ -330,7 +330,7 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
   <div class="history-head">
     <span>登録履歴</span>
     <div style="display:flex;gap:6px">
-      <button class="btn-csv" onclick="syncFromGas()" id="syncBtn">↓ シート読込</button>
+      <button class="btn-csv" onclick="openSyncModal()" id="syncBtn">↓ シート読込</button>
       <button class="btn-csv" onclick="exportCSV()">CSV出力</button>
     </div>
   </div>
@@ -389,6 +389,22 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
     <div class="modal-btns">
       <button class="btn-modal-ok" style="background:var(--returned)" onclick="saveReturn()">返送済みにする</button>
       <button class="btn-modal-cancel" onclick="closeModal('returnModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- シート読込フィルターモーダル -->
+<div class="modal-bg" id="syncModal">
+  <div class="modal">
+    <h3>シートから読み込む</h3>
+    <div class="modal-meta">スプレッドシートのどのデータを読み込みますか？</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn-use" onclick="syncFromGas('all')" style="background:var(--ink)">全件読み込む</button>
+      <button class="btn-use" onclick="syncFromGas('unreturned')" style="background:var(--accent)">未返送のみ</button>
+      <button class="btn-use" onclick="syncFromGas('returned')" style="background:var(--returned)">返送済みのみ</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" style="flex:none;width:100%" onclick="closeModal('syncModal')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -738,7 +754,10 @@ function syncToGas(entry) {
 // ════════════════════════════════════
 //  シート逆引き（GAS → アプリ）
 // ════════════════════════════════════
-async function syncFromGas() {
+function openSyncModal() { document.getElementById('syncModal').classList.add('open'); }
+
+async function syncFromGas(filter = 'all') {
+  closeModal('syncModal');
   const btn = document.getElementById('syncBtn');
   const statusEl = document.getElementById('syncStatus');
   const gasUrl = CFG.gasUrl || GAS_DEFAULT;
@@ -746,6 +765,7 @@ async function syncFromGas() {
   btn.textContent = '読込中...';
   btn.disabled = true;
   statusEl.style.display = 'flex';
+  statusEl.style.color = 'var(--accent2)';
   statusEl.innerHTML = '<span class="spinner"></span>スプレッドシートから読み込み中...';
 
   try {
@@ -761,24 +781,28 @@ async function syncFromGas() {
     }
 
     // スプレッドシートの行をアプリのデータ形式に変換
-    const imported = data.rows.map(r => ({
-      id:               r['登録日時'] ? new Date(r['登録日時']).getTime() || Date.now() : Date.now(),
-      registeredAt:     r['登録日時']        || '',
-      date:             r['到着日']          || '',
-      time:             r['時刻']            || '',
-      tracking:         r['送り状番号']      || '',
-      sender:           r['返送元']          || '',
-      senderAddress:    r['差出人住所']      || '',
-      jan:              r['JANコード']        || '',
-      productName:      r['商品名']          || '',
-      itemDescription:  r['品名']            || '',
-      qty:              parseInt(r['数量'])  || 1,
-      location:         r['ロケーション']    || null,
-      locPending:       r['ロケーション状態'] === '未定',
-      returned:         r['返送済み']        === '返送済',
-      returnedDate:     r['返送日']          || null,
-      returnNote:       r['返送備考']        || null
+    let imported = data.rows.map(r => ({
+      id:              Date.now() + Math.random(),
+      registeredAt:    r['登録日時']        || '',
+      date:            r['到着日']          || '',
+      time:            r['時刻']            || '',
+      tracking:        r['送り状番号']      || '',
+      sender:          r['返送元']          || '',
+      senderAddress:   r['差出人住所']      || '',
+      jan:             r['JANコード']       || '',
+      productName:     r['商品名']          || '',
+      itemDescription: r['品名']            || '',
+      qty:             parseInt(r['数量'])  || 1,
+      location:        r['ロケーション']    || null,
+      locPending:      r['ロケーション状態'] === '未定',
+      returned:        r['返送済み']        === '返送済',
+      returnedDate:    r['返送日']          || null,
+      returnNote:      r['返送備考']        || null
     }));
+
+    // フィルター適用
+    if (filter === 'unreturned') imported = imported.filter(i => !i.returned);
+    if (filter === 'returned')   imported = imported.filter(i => i.returned);
 
     // 既存データとマージ（送り状番号をキーに重複除去・シート優先）
     const merged = [...imported];
@@ -788,17 +812,14 @@ async function syncFromGas() {
     });
 
     // 到着日の降順でソート
-    merged.sort((a, b) => {
-      if (a.date > b.date) return -1;
-      if (a.date < b.date) return 1;
-      return 0;
-    });
+    merged.sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
 
     history = merged;
     save();
     renderHistory();
 
-    statusEl.innerHTML = `✓ ${imported.length}件を読み込みました（合計 ${merged.length}件）`;
+    const filterLabel = filter === 'unreturned' ? '未返送' : filter === 'returned' ? '返送済み' : '全件';
+    statusEl.innerHTML = `✓ ${filterLabel} ${imported.length}件を読み込みました（合計 ${merged.length}件）`;
     statusEl.style.color = 'var(--ok)';
     setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
 
