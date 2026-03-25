@@ -100,6 +100,12 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
 
 .h-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;animation:fadeUp 0.25s ease}
 .h-item.returned{border-color:var(--returned);background:#f8f4ff}
+.h-item.alert-over{border-color:var(--accent);background:#fff5f5}
+.h-item.alert-soon{border-color:var(--warn);background:#fffbf0}
+.h-deadline{font-size:0.7rem;font-weight:700;padding:1px 8px;border-radius:4px;margin-left:4px;display:inline-block}
+.h-deadline.over{background:var(--accent);color:#fff}
+.h-deadline.soon{background:var(--warn);color:#fff}
+.h-deadline.ok{background:var(--ok);color:#fff}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .h-row1{display:flex;align-items:flex-start;gap:8px;margin-bottom:3px}
 .h-name{font-size:0.88rem;font-weight:700;flex:1;line-height:1.4}
@@ -308,6 +314,13 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
       <label>GASウェブアプリURL</label>
       <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/...">
     </div>
+    <div class="form-row">
+      <label>返送期限（到着日から何日）</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="tel" id="deadlineDays" placeholder="例: 14" style="width:100px">
+        <span style="font-size:0.82rem;color:var(--ink2)">日以内 / 0で無効</span>
+      </div>
+    </div>
     <button class="btn-use" style="width:100%;margin-top:4px" onclick="saveConfig()">保存</button>
   </div>
 </div>
@@ -316,13 +329,17 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
 <div class="card">
   <div class="history-head">
     <span>登録履歴</span>
-    <button class="btn-csv" onclick="exportCSV()">CSV出力</button>
+    <div style="display:flex;gap:6px">
+      <button class="btn-csv" onclick="syncFromGas()" id="syncBtn">↓ シート読込</button>
+      <button class="btn-csv" onclick="exportCSV()">CSV出力</button>
+    </div>
   </div>
   <div class="search-bar">
     <input type="text" id="searchInput" placeholder="送り状番号 / JAN / 商品名で検索..."
            oninput="renderHistory()" onkeydown="if(event.key==='Enter')renderHistory()">
     <button class="btn-srch" onclick="renderHistory()">検索</button>
   </div>
+  <div id="syncStatus" style="display:none;padding:8px 14px;font-size:0.78rem;color:var(--accent2);display:flex;align-items:center;gap:6px"></div>
   <div id="historyList"></div>
 </div>
 
@@ -382,8 +399,9 @@ input.manual-mode{border-color:var(--warn);background:#fffbf0}
 const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
 
 let CFG = {
-  yahooId: localStorage.getItem('wh_yahoo_id') || '',
-  gasUrl:  localStorage.getItem('wh_gas_url')  || ''
+  yahooId:      localStorage.getItem('wh_yahoo_id')       || '',
+  gasUrl:       localStorage.getItem('wh_gas_url')        || '',
+  deadlineDays: parseInt(localStorage.getItem('wh_deadline_days') || '0')
 };
 let history = JSON.parse(localStorage.getItem('wh_history') || '[]');
 let scanning = false, lastCode = null, currentProduct = null, locPending = false;
@@ -393,8 +411,9 @@ let editIdx = null, locIdx = null, retIdx = null;
 window.onload = () => {
   document.getElementById('arrivalDate').value = new Date().toISOString().slice(0,10);
   updateTime(); setInterval(updateTime, 30000);
-  if (CFG.yahooId) document.getElementById('yahooId').value = CFG.yahooId;
-  if (CFG.gasUrl)  document.getElementById('gasUrl').value  = CFG.gasUrl;
+  if (CFG.yahooId)      document.getElementById('yahooId').value      = CFG.yahooId;
+  if (CFG.gasUrl)       document.getElementById('gasUrl').value       = CFG.gasUrl;
+  if (CFG.deadlineDays) document.getElementById('deadlineDays').value = CFG.deadlineDays;
   if (!CFG.gasUrl) document.getElementById('configPanel').classList.add('open');
   renderHistory();
 };
@@ -407,12 +426,15 @@ function updateTime() {
 // CONFIG
 function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
 function saveConfig() {
-  CFG.yahooId = document.getElementById('yahooId').value.trim();
-  CFG.gasUrl  = document.getElementById('gasUrl').value.trim();
-  localStorage.setItem('wh_yahoo_id', CFG.yahooId);
-  localStorage.setItem('wh_gas_url',  CFG.gasUrl);
+  CFG.yahooId      = document.getElementById('yahooId').value.trim();
+  CFG.gasUrl       = document.getElementById('gasUrl').value.trim();
+  CFG.deadlineDays = parseInt(document.getElementById('deadlineDays').value) || 0;
+  localStorage.setItem('wh_yahoo_id',       CFG.yahooId);
+  localStorage.setItem('wh_gas_url',        CFG.gasUrl);
+  localStorage.setItem('wh_deadline_days',  CFG.deadlineDays);
   document.getElementById('configPanel').classList.remove('open');
   showToast('設定を保存しました');
+  renderHistory();
 }
 
 // CAMERA
@@ -590,14 +612,35 @@ function renderHistory() {
   if (!list.length) {
     el.innerHTML = `<div class="empty-hist">${q ? '検索結果なし' : '登録データがありません'}</div>`; return;
   }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
   el.innerHTML = list.map(item => {
     const idx = history.indexOf(item);
     const locB = item.locPending ? `<span class="h-loc pending">未定</span>` : item.location ? `<span class="h-loc">${esc(item.location)}</span>` : '';
     const retB = item.returned ? `<span class="h-badge-ret">返送済</span>` : '';
     const descTxt = item.itemDescription ? ` <span style="font-weight:400;color:var(--ink2)">（${esc(item.itemDescription)}）</span>` : '';
-    return `<div class="h-item${item.returned?' returned':''}">
+
+    // 期限アラート計算
+    let alertClass = '', deadlineBadge = '';
+    if (CFG.deadlineDays > 0 && !item.returned && item.date) {
+      const arrival = new Date(item.date); arrival.setHours(0,0,0,0);
+      const deadline = new Date(arrival); deadline.setDate(deadline.getDate() + CFG.deadlineDays);
+      const diffDays = Math.ceil((deadline - today) / 86400000);
+      if (diffDays < 0) {
+        alertClass = 'alert-over';
+        deadlineBadge = `<span class="h-deadline over">期限超過 ${Math.abs(diffDays)}日</span>`;
+      } else if (diffDays <= 3) {
+        alertClass = 'alert-soon';
+        deadlineBadge = `<span class="h-deadline soon">期限まで${diffDays}日</span>`;
+      } else {
+        deadlineBadge = `<span class="h-deadline ok">${diffDays}日後</span>`;
+      }
+    }
+
+    return `<div class="h-item${item.returned?' returned':''} ${alertClass}">
       <div class="h-row1">
-        <div class="h-name">${retB}${esc(item.productName)}${descTxt}</div>
+        <div class="h-name">${retB}${esc(item.productName)}${descTxt}${deadlineBadge}</div>
         <div class="h-date">${item.date}</div>
       </div>
       <div class="h-meta">
@@ -690,6 +733,82 @@ function syncToGas(entry) {
     method: 'POST', headers: {'Content-Type':'text/plain'},
     body: JSON.stringify({ ...entry, mode: 'update' })
   }).catch(console.error);
+}
+
+// ════════════════════════════════════
+//  シート逆引き（GAS → アプリ）
+// ════════════════════════════════════
+async function syncFromGas() {
+  const btn = document.getElementById('syncBtn');
+  const statusEl = document.getElementById('syncStatus');
+  const gasUrl = CFG.gasUrl || GAS_DEFAULT;
+
+  btn.textContent = '読込中...';
+  btn.disabled = true;
+  statusEl.style.display = 'flex';
+  statusEl.innerHTML = '<span class="spinner"></span>スプレッドシートから読み込み中...';
+
+  try {
+    const url = `${gasUrl}?mode=getAll`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    if (!data.rows || !data.rows.length) {
+      statusEl.innerHTML = 'データがありません';
+      return;
+    }
+
+    // スプレッドシートの行をアプリのデータ形式に変換
+    const imported = data.rows.map(r => ({
+      id:               r['登録日時'] ? new Date(r['登録日時']).getTime() || Date.now() : Date.now(),
+      registeredAt:     r['登録日時']        || '',
+      date:             r['到着日']          || '',
+      time:             r['時刻']            || '',
+      tracking:         r['送り状番号']      || '',
+      sender:           r['返送元']          || '',
+      senderAddress:    r['差出人住所']      || '',
+      jan:              r['JANコード']        || '',
+      productName:      r['商品名']          || '',
+      itemDescription:  r['品名']            || '',
+      qty:              parseInt(r['数量'])  || 1,
+      location:         r['ロケーション']    || null,
+      locPending:       r['ロケーション状態'] === '未定',
+      returned:         r['返送済み']        === '返送済',
+      returnedDate:     r['返送日']          || null,
+      returnNote:       r['返送備考']        || null
+    }));
+
+    // 既存データとマージ（送り状番号をキーに重複除去・シート優先）
+    const merged = [...imported];
+    history.forEach(local => {
+      const exists = imported.some(i => i.tracking && i.tracking === local.tracking);
+      if (!exists) merged.push(local);
+    });
+
+    // 到着日の降順でソート
+    merged.sort((a, b) => {
+      if (a.date > b.date) return -1;
+      if (a.date < b.date) return 1;
+      return 0;
+    });
+
+    history = merged;
+    save();
+    renderHistory();
+
+    statusEl.innerHTML = `✓ ${imported.length}件を読み込みました（合計 ${merged.length}件）`;
+    statusEl.style.color = 'var(--ok)';
+    setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+
+  } catch(e) {
+    statusEl.innerHTML = '読み込みエラー: ' + e.message;
+    statusEl.style.color = 'var(--accent)';
+  } finally {
+    btn.textContent = '↓ シート読込';
+    btn.disabled = false;
+  }
 }
 
 // CSV
