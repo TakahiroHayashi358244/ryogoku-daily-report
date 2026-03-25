@@ -669,7 +669,7 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
     <div class="h-title">WAREHOUSE RECEIVE</div>
     <div class="h-sub">入荷登録システム</div>
   </div>
-  <div class="h-badge">楽天API + OCR対応</div>
+  <div class="h-badge">Yahoo! API + OCR対応</div>
 </header>
 
 <main>
@@ -826,8 +826,8 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
   <div class="config-toggle" onclick="toggleConfig()">⚙ API設定</div>
   <div class="config-panel" id="configPanel">
     <div class="form-row">
-      <label>楽天 Application ID</label>
-      <input type="password" id="rakutenId" placeholder="rakuten application ID">
+      <label>Yahoo! Client ID（Application ID）</label>
+      <input type="password" id="rakutenId" placeholder="Yahoo! Client ID">
     </div>
     <div class="form-row">
       <label>Claude API Key <span class="opt">送り状OCR用</span></label>
@@ -1002,28 +1002,28 @@ async function searchProduct() {
   }
 
   resetProductArea();
-  setStatus('楽天市場から商品検索中...', 'loading');
+  setStatus('Yahoo!ショッピングから商品検索中...', 'loading');
 
   try {
-    // 楽天商品検索API（JANコードで検索）
-    const url = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?applicationId=${CFG.rakutenId}&jan=${code}&hits=1&format=json`;
+    // Yahoo!ショッピング商品検索API（JANコードで検索）
+    const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${CFG.rakutenId}&jan_code=${code}&results=1`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
 
-    if (!data.Items || data.Items.length === 0) {
-      setStatus('楽天市場に商品が見つかりませんでした', 'err');
+    if (!data.hits || data.hits.length === 0) {
+      setStatus('Yahoo!ショッピングに商品が見つかりませんでした', 'err');
       showManualInput();
       return;
     }
 
-    const item = data.Items[0].Item;
+    const item = data.hits[0];
     currentProduct = {
       code,
-      name:  item.itemName,
-      brand: item.shopName || '',
-      price: item.itemPrice || null,
-      url:   item.itemUrl || ''
+      name:  item.name,
+      brand: item.brand?.name || item.seller?.name || '',
+      price: item.price || null,
+      url:   item.url || ''
     };
     displayProductResult(currentProduct);
     setStatus('商品情報を取得しました ✓', 'ok');
