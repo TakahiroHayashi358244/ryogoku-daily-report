@@ -1005,8 +1005,9 @@ async function searchProduct() {
   setStatus('Yahoo!ショッピングから商品検索中...', 'loading');
 
   try {
-    // Yahoo!ショッピング商品検索API（JANコードで検索）
-    const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${CFG.rakutenId}&jan_code=${code}&results=1`;
+    // GASプロキシ経由でYahoo!ショッピングAPIを呼び出し
+    const GAS_URL = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
+    const url = `${GAS_URL}?mode=yahoo&jan=${code}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
@@ -1130,14 +1131,14 @@ function submitEntry() {
   renderHistory();
   showToast('入荷登録しました ✓');
 
-  // GAS送信
-  if (CFG.gasUrl) sendToGas(entry);
+  sendToGas(entry);
 
   resetForm();
 }
 
 function sendToGas(entry) {
-  fetch(CFG.gasUrl, {
+  const url = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
+  fetch(url, {
     method: 'POST',
     mode: 'no-cors',
     headers: { 'Content-Type': 'application/json' },
