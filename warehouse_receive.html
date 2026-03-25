@@ -1311,72 +1311,31 @@ async function handleOcrImage(e) {
 }
 
 async function callClaudeOcr(base64Data, mimeType) {
-  // GASプロキシ経由（推奨）またはClaude API直接
-  const useProxy = !!CFG.gasUrl;
-  const useDirectApi = !!CFG.claudeKey;
+  const GAS_URL = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
 
-  if (!useProxy && !useDirectApi) {
-    throw new Error('Claude API KeyまたはGAS URLを設定してください');
-  }
+  const prompt = `この画像は日本の宅配便の送り状（伝票）です。以下の情報を読み取り、必ずJSON形式のみで返してください。他の文字は一切含めないでください。
 
-  const prompt = `この画像は日本の宅配便の送り状（伝票）です。
-以下の情報を読み取り、必ずJSON形式のみで返してください。他の文字は一切含めないでください。
+{"tracking_number":"送り状番号（数字とハイフンのみ、なければnull）","sender_name":"差出人の氏名または会社名（なければnull）","sender_address":"差出人の住所（都道府県から番地まで、なければnull）"}
 
-{
-  "tracking_number": "送り状番号（数字とハイフンのみ、見つからなければnull）",
-  "sender_name": "差出人の氏名または会社名（見つからなければnull）",
-  "sender_address": "差出人の住所（都道府県から番地まで、見つからなければnull）"
-}
+注意: 送り状番号は12〜14桁の数字、差出人は「ご依頼主」「差出人」ラベルの近く、住所は都道府県名から始まる。読み取れない部分はnull。`;
 
-注意:
-- 送り状番号は12〜14桁の数字が多い
-- 差出人は「ご依頼主」「送り主」「差出人」などのラベルの近くにある
-- 住所は都道府県名から始まることが多い
-- 読み取れない部分はnullにする`;
+  const body = JSON.stringify({
+    mode: 'ocr',
+    image: base64Data,
+    mimeType: mimeType,
+    prompt: prompt
+  });
 
-  let responseText;
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // GASはapplication/jsonだとpreflightが飛ぶためtext/plainで回避
+    body: body
+  });
+  if (!res.ok) throw new Error('GAS error: ' + res.status);
+  const d = await res.json();
+  if (!d.text) throw new Error('レスポンスが空です');
 
-  if (useProxy && CFG.gasUrl) {
-    // GASプロキシ経由（APIキーをサーバーサイドで管理・推奨）
-    const res = await fetch(CFG.gasUrl + '?mode=ocr', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64Data, mimeType, prompt })
-    });
-    if (!res.ok) throw new Error('GASプロキシエラー: ' + res.status);
-    const d = await res.json();
-    responseText = d.text;
-  } else {
-    // Claude API直接（開発・テスト用）
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': CFG.claudeKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 512,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mimeType, data: base64Data } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || 'API error ' + res.status);
-    }
-    const d = await res.json();
-    responseText = d.content[0].text;
-  }
-
-  // JSONパース
-  const clean = responseText.replace(/```json|```/g, '').trim();
+  const clean = d.text.replace(/```json|```/g, '').trim();
   return JSON.parse(clean);
 }
 
