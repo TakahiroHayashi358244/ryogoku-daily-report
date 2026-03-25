@@ -3,683 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>入荷登録システム</title>
+<title>Return Manager</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 :root {
-  --bg:       #f5f2ec;
-  --surface:  #ffffff;
-  --surface2: #f0ece3;
-  --ink:      #1a1714;
-  --ink2:     #6b6560;
-  --accent:   #bf3a2b;
-  --accent2:  #2b6bbf;
-  --border:   #ddd8cf;
-  --ok:       #2a7d4f;
-  --warn:     #c47a00;
-  --radius:   10px;
+  --bg:#f5f2ec; --surface:#fff; --surface2:#f0ece3;
+  --ink:#1a1714; --ink2:#6b6560; --accent:#bf3a2b; --accent2:#2b6bbf;
+  --border:#ddd8cf; --ok:#2a7d4f; --warn:#c47a00; --returned:#6b35bf;
+  --radius:10px;
 }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif;font-size:14px;min-height:100vh}
 
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+header{background:var(--ink);color:#fff;padding:14px 16px 12px;display:flex;align-items:flex-end;gap:12px;position:sticky;top:0;z-index:100}
+.h-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.08em;line-height:1}
+.h-sub{font-size:0.7rem;color:#aaa;letter-spacing:0.05em;padding-bottom:2px}
+.h-badge{margin-left:auto;background:var(--accent);font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:0.04em}
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 14px;
-  min-height: 100vh;
-}
+main{max-width:680px;margin:0 auto;padding:16px 14px 48px;display:flex;flex-direction:column;gap:14px}
 
-/* ── HEADER ── */
-header {
-  background: var(--ink);
-  color: #fff;
-  padding: 14px 16px 12px;
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.h-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.6rem;
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-.h-sub {
-  font-size: 0.7rem;
-  color: #aaa;
-  letter-spacing: 0.05em;
-  padding-bottom: 2px;
-}
-.h-badge {
-  margin-left: auto;
-  background: var(--accent);
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-head{background:var(--ink);color:#fff;padding:9px 14px;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.card-head .step{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--accent);border-radius:50%;font-size:0.78rem;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.card-body{padding:14px}
 
-/* ── MAIN ── */
-main {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 16px 14px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-row:last-child{margin-bottom:0}
+.form-row label{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--ink2);text-transform:uppercase}
+.form-row label .req{color:var(--accent);margin-left:2px}
+.form-row label .opt{font-weight:400;color:var(--ink2);font-size:0.68rem;margin-left:4px;text-transform:none}
+input[type=text],input[type=date],input[type=tel],select,textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:0.92rem;color:var(--ink);transition:border-color 0.15s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);background:#fff}
+input.mono{font-family:'JetBrains Mono',monospace;font-size:1rem;letter-spacing:0.06em}
+input.filled{border-color:var(--ok);background:#f0faf5}
+input.manual-mode{border-color:var(--warn);background:#fffbf0}
+.row2{display:flex;gap:10px}
+.row2>*{flex:1}
 
-/* ── CARD ── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.card-head {
-  background: var(--ink);
-  color: #fff;
-  padding: 9px 14px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.card-head .step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px; height: 22px;
-  background: var(--accent);
-  border-radius: 50%;
-  font-size: 0.78rem;
-  font-family: 'JetBrains Mono', monospace;
-  flex-shrink: 0;
-}
-.card-body { padding: 14px; }
+.scan-wrap{display:flex;gap:8px;align-items:stretch}
+.scan-wrap input{flex:1}
+.btn-cam{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:0 14px;font-size:1.2rem;cursor:pointer;flex-shrink:0;transition:background 0.15s}
+.btn-cam:hover{background:#333}
+.btn-cam.active{background:var(--accent)}
 
-/* ── FORM ROWS ── */
-.form-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
-}
-.form-row:last-child { margin-bottom: 0; }
-.form-row label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--ink2);
-  text-transform: uppercase;
-}
-.form-row label .req { color: var(--accent); margin-left: 2px; }
-.form-row label .opt {
-  font-weight: 400;
-  color: var(--ink2);
-  font-size: 0.68rem;
-  margin-left: 4px;
-  text-transform: none;
-}
+#scanner-container{display:none;position:relative;background:#000;border-radius:8px;overflow:hidden;margin-top:10px}
+#scanner-container.visible{display:block}
+#scanner-container video{width:100%;height:240px;display:block;object-fit:cover}
+#scanner-container canvas{display:none !important}
+.scan-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-box{width:72%;height:80px;border:2px solid rgba(255,255,255,0.9);border-radius:6px;position:relative;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)}
+.scan-line{position:absolute;left:4px;right:4px;height:2px;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:sl 1.8s ease-in-out infinite}
+@keyframes sl{0%,100%{top:8%}50%{top:82%}}
 
-input[type=text], input[type=date], input[type=tel], select, textarea {
-  width: 100%;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: 7px;
-  padding: 10px 12px;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 0.92rem;
-  color: var(--ink);
-  transition: border-color 0.15s;
-  -webkit-appearance: none;
-}
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--accent2);
-  background: #fff;
-}
-input.mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
-  letter-spacing: 0.06em;
-}
-input.filled { border-color: var(--ok); background: #f0faf5; }
-input.manual-mode { border-color: var(--warn); background: #fffbf0; }
+.product-found{background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:10px 12px;margin-top:10px;display:none}
+.product-found.visible{display:block}
+.pf-name{font-weight:700;font-size:0.95rem;margin-bottom:4px;line-height:1.4}
+.pf-meta{font-size:0.75rem;color:var(--ink2);font-family:'JetBrains Mono',monospace}
+.pf-actions{display:flex;gap:8px;margin-top:10px}
+.btn-use{flex:1;background:var(--ok);color:#fff;border:none;border-radius:7px;padding:9px;font-weight:700;font-size:0.85rem;cursor:pointer}
+.btn-manual{flex:1;background:none;border:1.5px solid var(--warn);color:var(--warn);border-radius:7px;padding:9px;font-weight:700;font-size:0.85rem;cursor:pointer}
+.manual-name-row{display:none;margin-top:10px}
+.manual-name-row.visible{display:block}
 
-.row2 { display: flex; gap: 10px; }
-.row2 > * { flex: 1; }
+.loc-wrap{display:flex;gap:8px}
+.loc-wrap input{flex:1}
+.loc-pending{background:var(--surface2);border:1.5px dashed var(--warn);border-radius:7px;padding:9px 12px;font-size:0.8rem;color:var(--warn);font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:4px;white-space:nowrap}
 
-/* ── SCAN AREA ── */
-.scan-wrap {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
-}
-.scan-wrap input { flex: 1; }
-.btn-cam {
-  background: var(--ink);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 0 14px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s;
-}
-.btn-cam:hover { background: #333; }
-.btn-cam.active { background: var(--accent); }
+.submit-area{padding:14px;border-top:1px solid var(--border);display:flex;gap:10px}
+.btn-submit{flex:1;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.1em;cursor:pointer;transition:opacity 0.2s}
+.btn-submit:hover{opacity:0.88}
+.btn-reset{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2);border-radius:8px;padding:14px 16px;cursor:pointer;font-size:0.85rem}
 
-#scanner-container {
-  display: none;
-  position: relative;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 10px;
-}
-#scanner-container.visible { display: block; }
-#scanner-container video { width: 100%; display: block; max-height: 240px; object-fit: cover; }
-.scan-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.scan-box {
-  width: 72%; height: 80px;
-  border: 2px solid #fff;
-  border-radius: 6px;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
-  position: relative;
-}
-.scan-box::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  height: 2px;
-  background: var(--accent);
-  animation: sl 1.8s ease-in-out infinite;
-  top: 20%;
-}
-@keyframes sl { 0%,100%{top:10%} 50%{top:80%} }
+#status{padding:8px 14px;font-size:0.78rem;min-height:32px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+#status.loading{color:var(--accent2)}
+#status.ok{color:var(--ok);font-weight:700}
+#status.err{color:var(--accent);font-weight:700}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid #ccc;border-top-color:var(--accent2);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── PRODUCT RESULT ── */
-.product-found {
-  background: var(--surface2);
-  border: 1.5px solid var(--ok);
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-top: 10px;
-  display: none;
-}
-.product-found.visible { display: block; }
-.pf-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  margin-bottom: 4px;
-  line-height: 1.4;
-}
-.pf-meta {
-  font-size: 0.75rem;
-  color: var(--ink2);
-  font-family: 'JetBrains Mono', monospace;
-}
-.pf-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.btn-use {
-  flex: 1;
-  background: var(--ok);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 9px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-.btn-manual {
-  flex: 1;
-  background: none;
-  border: 1.5px solid var(--warn);
-  color: var(--warn);
-  border-radius: 7px;
-  padding: 9px;
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
-}
+.search-bar{display:flex;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.search-bar input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:9px 12px;font-size:0.88rem;color:var(--ink)}
+.search-bar input:focus{outline:none;border-color:var(--accent2);background:#fff}
+.btn-srch{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap}
 
-.manual-name-row {
-  display: none;
-  margin-top: 10px;
-}
-.manual-name-row.visible { display: block; }
+.config-toggle{font-size:0.72rem;color:var(--ink2);cursor:pointer;text-align:right;padding:6px 14px;text-decoration:underline;text-decoration-style:dotted}
+.config-panel{background:var(--surface2);border-top:1px solid var(--border);padding:12px 14px;display:none}
+.config-panel.open{display:block}
+.config-panel .form-row{margin-bottom:10px}
 
-/* ── LOCATION ── */
-.loc-wrap { display: flex; gap: 8px; }
-.loc-wrap input { flex: 1; }
-.loc-pending {
-  background: var(--surface2);
-  border: 1.5px dashed var(--warn);
-  border-radius: 7px;
-  padding: 9px 12px;
-  font-size: 0.8rem;
-  color: var(--warn);
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
+.history-head{padding:10px 14px 6px;font-family:'Bebas Neue',sans-serif;letter-spacing:0.1em;font-size:0.95rem;color:var(--ink2);display:flex;justify-content:space-between;align-items:center}
+.btn-csv{background:none;border:1.5px solid var(--border);border-radius:6px;padding:4px 12px;font-size:0.72rem;color:var(--ink2);cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+.btn-csv:hover{border-color:var(--accent2);color:var(--accent2)}
+#historyList{padding:0 14px 14px;display:flex;flex-direction:column;gap:8px}
 
-/* ── SENDER ── */
-.sender-hint {
-  font-size: 0.72rem;
-  color: var(--ink2);
-  margin-top: 4px;
-}
+.h-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;animation:fadeUp 0.25s ease}
+.h-item.returned{border-color:var(--returned);background:#f8f4ff}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.h-row1{display:flex;align-items:flex-start;gap:8px;margin-bottom:3px}
+.h-name{font-size:0.88rem;font-weight:700;flex:1;line-height:1.4}
+.h-date{font-size:0.7rem;color:var(--ink2);white-space:nowrap;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.h-meta{font-size:0.72rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;line-height:1.7}
+.h-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.h-btn{border:none;border-radius:5px;padding:5px 11px;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+.h-btn-edit{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2)}
+.h-btn-loc{background:var(--warn);color:#fff}
+.h-btn-return{background:var(--returned);color:#fff}
+.h-btn-unreturn{background:var(--surface2);border:1.5px solid var(--returned);color:var(--returned)}
+.h-loc{display:inline-block;background:var(--ink);color:#fff;padding:1px 7px;border-radius:4px;font-size:0.68rem;margin-right:4px;font-family:'JetBrains Mono',monospace}
+.h-loc.pending{background:var(--warn)}
+.h-badge-ret{display:inline-block;background:var(--returned);color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;margin-right:4px}
 
-/* ── SUBMIT ── */
-.submit-area {
-  padding: 14px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  gap: 10px;
-}
-.btn-submit {
-  flex: 1;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 14px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.2rem;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.btn-submit:hover { opacity: 0.88; }
-.btn-submit:disabled { opacity: 0.4; cursor: default; }
-.btn-reset {
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  color: var(--ink2);
-  border-radius: 8px;
-  padding: 14px 16px;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
+.empty-hist{text-align:center;color:var(--ink2);font-size:0.8rem;padding:20px;border:1.5px dashed var(--border);border-radius:8px}
 
-/* ── STATUS ── */
-#status {
-  padding: 8px 14px;
-  font-size: 0.78rem;
-  min-height: 32px;
-  color: var(--ink2);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-#status.loading { color: var(--accent2); }
-#status.ok  { color: var(--ok); font-weight: 700; }
-#status.err { color: var(--accent); font-weight: 700; }
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--ink);color:#fff;padding:10px 24px;border-radius:24px;font-size:0.88rem;font-weight:700;transition:transform 0.3s ease;z-index:999;pointer-events:none;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
 
-.spinner {
-  display: inline-block;
-  width: 13px; height: 13px;
-  border: 2px solid #ccc;
-  border-top-color: var(--accent2);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.ocr-trigger{display:flex;align-items:center;gap:12px;padding:13px 14px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none}
+.ocr-trigger:hover{opacity:0.88}
+.ocr-icon{font-size:1.5rem;flex-shrink:0}
+.ocr-label{color:#fff}
+.ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em}
+.ocr-label span{font-size:0.72rem;color:#aaa}
+.badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.ocr-preview-wrap{display:none;margin-top:10px;position:relative}
+.ocr-preview-wrap.visible{display:block}
+#ocrPreview{width:100%;border-radius:8px;display:block;max-height:200px;object-fit:contain;background:#000}
+.ocr-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.55);border-radius:8px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.ocr-overlay.visible{display:flex}
+.ocr-spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite}
+.ocr-overlay-text{color:#fff;font-size:0.8rem;font-weight:700}
+.ocr-result-box{display:none;margin-top:10px;background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:12px 14px}
+.ocr-result-box.visible{display:block}
+.ocr-result-title{font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:0.08em;color:var(--ok);margin-bottom:10px}
+.ocr-field{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.ocr-field label{font-size:0.68rem;font-weight:700;letter-spacing:0.08em;color:var(--ink2);text-transform:uppercase}
+.ocr-field input{background:#fff;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:0.9rem;color:var(--ink);font-family:'Noto Sans JP',sans-serif}
+.ocr-apply-btn{width:100%;background:var(--ok);color:#fff;border:none;border-radius:7px;padding:10px;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'Noto Sans JP',sans-serif}
+.ocr-err{display:none;margin-top:8px;font-size:0.78rem;color:var(--accent);font-weight:700}
+.ocr-err.visible{display:block}
+#ocrFileInput{display:none}
 
-/* ── CONFIG ── */
-.config-toggle {
-  font-size: 0.72rem;
-  color: var(--ink2);
-  cursor: pointer;
-  text-align: right;
-  padding: 6px 14px;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-}
-.config-panel {
-  background: var(--surface2);
-  border-top: 1px solid var(--border);
-  padding: 12px 14px;
-  display: none;
-}
-.config-panel.open { display: block; }
-.config-panel .form-row { margin-bottom: 10px; }
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius);padding:20px;width:92%;max-width:420px;max-height:92vh;overflow-y:auto}
+.modal h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.08em;margin-bottom:6px}
+.modal-meta{font-size:0.78rem;color:var(--ink2);margin-bottom:14px;line-height:1.5;border-bottom:1px solid var(--border);padding-bottom:10px}
+.modal-btns{display:flex;gap:10px;margin-top:14px}
+.modal-btns button{flex:1;padding:11px;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.88rem}
+.btn-modal-ok{background:var(--ok);color:#fff;border:none}
+.btn-modal-cancel{background:none;border:1.5px solid var(--border);color:var(--ink2)}
 
-/* ── HISTORY ── */
-.history-head {
-  padding: 10px 14px 6px;
-  font-family: 'Bebas Neue', sans-serif;
-  letter-spacing: 0.1em;
-  font-size: 0.95rem;
-  color: var(--ink2);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.btn-csv {
-  background: none;
-  border: 1.5px solid var(--border);
-  border-radius: 6px;
-  padding: 4px 12px;
-  font-size: 0.72rem;
-  color: var(--ink2);
-  cursor: pointer;
-  font-family: 'Noto Sans JP', sans-serif;
-}
-.btn-csv:hover { border-color: var(--accent2); color: var(--accent2); }
-
-#historyList { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 8px; }
-
-.h-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 10px;
-  animation: fadeUp 0.25s ease;
-}
-@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
-.h-name {
-  font-size: 0.88rem;
-  font-weight: 700;
-  grid-column: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.h-time {
-  font-size: 0.7rem;
-  color: var(--ink2);
-  grid-column: 2;
-  grid-row: 1 / 3;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  font-family: 'JetBrains Mono', monospace;
-}
-.h-meta {
-  grid-column: 1;
-  font-size: 0.72rem;
-  color: var(--ink2);
-  font-family: 'JetBrains Mono', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.h-loc {
-  display: inline-block;
-  background: var(--ink);
-  color: #fff;
-  padding: 1px 7px;
-  border-radius: 4px;
-  font-size: 0.68rem;
-  margin-left: 4px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.h-loc.pending {
-  background: var(--warn);
-}
-.pending-badge {
-  font-size: 0.68rem;
-  background: var(--warn);
-  color: #fff;
-  padding: 2px 7px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 6px;
-}
-
-.empty-hist {
-  text-align: center;
-  color: var(--ink2);
-  font-size: 0.8rem;
-  padding: 20px;
-  border: 1.5px dashed var(--border);
-  border-radius: 8px;
-}
-
-/* ── TOAST ── */
-#toast {
-  position: fixed;
-  bottom: 20px; left: 50%;
-  transform: translateX(-50%) translateY(70px);
-  background: var(--ink);
-  color: #fff;
-  padding: 10px 24px;
-  border-radius: 24px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  transition: transform 0.3s ease;
-  z-index: 999;
-  pointer-events: none;
-  white-space: nowrap;
-}
-#toast.show { transform: translateX(-50%) translateY(0); }
-
-/* ── OCR CARD ── */
-.ocr-trigger {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  background: linear-gradient(135deg, #1a1714 0%, #2d2620 100%);
-  border-radius: var(--radius);
-  cursor: pointer;
-  border: 1.5px solid #3a3028;
-  transition: opacity 0.15s;
-  user-select: none;
-}
-.ocr-trigger:hover { opacity: 0.88; }
-.ocr-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-.ocr-label { color: #fff; }
-.ocr-label strong {
-  display: block;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-}
-.ocr-label span {
-  font-size: 0.72rem;
-  color: #aaa;
-}
-.ocr-label .badge-ocr {
-  display: inline-block;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 4px;
-  margin-left: 8px;
-  vertical-align: middle;
-  letter-spacing: 0.04em;
-}
-.ocr-preview-wrap {
-  display: none;
-  margin-top: 10px;
-  position: relative;
-}
-.ocr-preview-wrap.visible { display: block; }
-#ocrPreview {
-  width: 100%;
-  border-radius: 8px;
-  display: block;
-  max-height: 200px;
-  object-fit: contain;
-  background: #000;
-}
-.ocr-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  display: none;
-}
-.ocr-overlay.visible { display: flex; }
-.ocr-spinner {
-  width: 32px; height: 32px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-.ocr-overlay-text { color: #fff; font-size: 0.8rem; font-weight: 700; }
-
-.ocr-result-box {
-  display: none;
-  margin-top: 10px;
-  background: var(--surface2);
-  border: 1.5px solid var(--ok);
-  border-radius: 8px;
-  padding: 12px 14px;
-}
-.ocr-result-box.visible { display: block; }
-.ocr-result-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--ok);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 0.9rem;
-}
-.ocr-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-bottom: 10px;
-}
-.ocr-field:last-of-type { margin-bottom: 12px; }
-.ocr-field label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--ink2);
-  text-transform: uppercase;
-}
-.ocr-field input {
-  background: #fff;
-  border: 1.5px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  color: var(--ink);
-  font-family: 'Noto Sans JP', sans-serif;
-}
-.ocr-field input:focus { outline: none; border-color: var(--accent2); }
-.ocr-apply-btn {
-  width: 100%;
-  background: var(--ok);
-  color: #fff;
-  border: none;
-  border-radius: 7px;
-  padding: 10px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  font-family: 'Noto Sans JP', sans-serif;
-}
-.ocr-apply-btn:hover { opacity: 0.88; }
-.ocr-err {
-  display: none;
-  margin-top: 8px;
-  font-size: 0.78rem;
-  color: var(--accent);
-  font-weight: 700;
-}
-.ocr-err.visible { display: block; }
-
-/* hidden file input */
-#ocrFileInput { display: none; }
-
-/* ── LOC MODAL ── */
-.modal-bg {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-}
-.modal-bg.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 20px;
-  width: 90%;
-  max-width: 360px;
-}
-.modal h3 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.2rem;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-}
-.modal-meta { font-size: 0.78rem; color: var(--ink2); margin-bottom: 14px; }
-.modal-btns { display: flex; gap: 10px; margin-top: 14px; }
-.modal-btns button { flex: 1; padding: 11px; border-radius: 7px; font-weight: 700; cursor: pointer; font-size: 0.88rem; }
-.btn-modal-ok { background: var(--ok); color: #fff; border: none; }
-.btn-modal-cancel { background: none; border: 1.5px solid var(--border); color: var(--ink2); }
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}60%{transform:translateX(6px)}80%{transform:translateX(-3px)}}
 </style>
 </head>
 <body>
 
 <header>
   <div>
-    <div class="h-title">WAREHOUSE RECEIVE</div>
-    <div class="h-sub">入荷登録システム</div>
+    <div class="h-title">RETURN MANAGER</div>
+    <div class="h-sub">入荷・返品管理システム</div>
   </div>
-  <div class="h-badge">Yahoo! API + OCR対応</div>
+  <div class="h-badge">API + OCR対応</div>
 </header>
 
 <main>
 
-<!-- ══ STEP 1: 基本情報 ══ -->
+<!-- STEP 1 -->
 <div class="card">
   <div class="card-head"><span class="step">1</span>基本情報</div>
   <div class="card-body">
-
-    <!-- OCR トリガー -->
     <div class="ocr-trigger" onclick="triggerOcr()">
       <div class="ocr-icon">📸</div>
       <div class="ocr-label">
@@ -688,35 +182,21 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
       </div>
     </div>
     <input type="file" id="ocrFileInput" accept="image/*" capture="environment" onchange="handleOcrImage(event)">
-
-    <!-- プレビュー -->
     <div class="ocr-preview-wrap" id="ocrPreviewWrap">
-      <img id="ocrPreview" src="" alt="送り状プレビュー">
+      <img id="ocrPreview" src="" alt="">
       <div class="ocr-overlay" id="ocrOverlay">
         <div class="ocr-spinner"></div>
         <div class="ocr-overlay-text">AIが読み取り中...</div>
       </div>
     </div>
-
-    <!-- OCR結果 -->
     <div class="ocr-result-box" id="ocrResultBox">
       <div class="ocr-result-title">読み取り結果 — 確認して適用</div>
-      <div class="ocr-field">
-        <label>送り状番号</label>
-        <input type="tel" class="mono" id="ocrTracking" placeholder="未検出">
-      </div>
-      <div class="ocr-field">
-        <label>差出人名</label>
-        <input type="text" id="ocrSender" placeholder="未検出">
-      </div>
-      <div class="ocr-field">
-        <label>差出人住所</label>
-        <input type="text" id="ocrAddress" placeholder="未検出">
-      </div>
+      <div class="ocr-field"><label>送り状番号</label><input type="tel" class="mono" id="ocrTracking" placeholder="未検出"></div>
+      <div class="ocr-field"><label>差出人名</label><input type="text" id="ocrSender" placeholder="未検出"></div>
+      <div class="ocr-field"><label>差出人住所</label><input type="text" id="ocrAddress" placeholder="未検出"></div>
       <button class="ocr-apply-btn" onclick="applyOcrResult()">フォームに反映する</button>
     </div>
     <div class="ocr-err" id="ocrErr"></div>
-
     <div style="height:12px"></div>
 
     <div class="row2">
@@ -736,7 +216,6 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
     <div class="form-row">
       <label>返送元（差出人）<span class="opt">任意</span></label>
       <input type="text" id="senderName" placeholder="例: 山田 太郎 / ○○株式会社">
-      <div class="sender-hint">送り状の差出人名・住所（OCRで自動入力可）</div>
     </div>
     <div class="form-row">
       <label>差出人住所<span class="opt">任意</span></label>
@@ -745,7 +224,7 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
   </div>
 </div>
 
-<!-- ══ STEP 2: 商品 ══ -->
+<!-- STEP 2 -->
 <div class="card">
   <div class="card-head"><span class="step">2</span>商品情報</div>
   <div class="card-body">
@@ -754,19 +233,16 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
       <div class="scan-wrap">
         <input type="tel" class="mono" id="janInput" placeholder="4901234567890" maxlength="14"
                oninput="onJanInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchProduct()}">
-        <button class="btn-cam" id="camBtn" onclick="toggleCamera()" title="カメラ起動">📷</button>
+        <button class="btn-cam" id="camBtn" onclick="toggleCamera()">📷</button>
       </div>
       <div id="scanner-container">
         <div id="interactive"></div>
         <div class="scan-overlay">
-          <div class="scan-box"></div>
+          <div class="scan-box"><div class="scan-line"></div></div>
         </div>
       </div>
     </div>
-
     <div id="status"></div>
-
-    <!-- 検索結果 -->
     <div class="product-found" id="productFound">
       <div class="pf-name" id="pfName"></div>
       <div class="pf-meta" id="pfMeta"></div>
@@ -775,21 +251,20 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
         <button class="btn-manual" onclick="goManual()">手打ちで入力</button>
       </div>
     </div>
-
-    <!-- 手打ち入力 -->
     <div class="manual-name-row" id="manualNameRow">
       <div class="form-row" style="margin:0">
         <label>商品名<span class="req">*</span>（手動入力）</label>
         <input type="text" id="productNameManual" placeholder="商品名を入力してください" class="manual-mode">
       </div>
     </div>
-
-    <!-- 確定済み表示 -->
     <input type="hidden" id="productNameFixed">
     <input type="hidden" id="productCode">
-    <input type="hidden" id="productUrl">
 
     <div class="form-row" style="margin-top:12px">
+      <label>品名<span class="opt">任意 — 状態・種別など</span></label>
+      <input type="text" id="itemDescription" placeholder="例: 返品 / 不良品 / 未開封">
+    </div>
+    <div class="form-row">
       <label>数量<span class="req">*</span></label>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="changeQty(-1)" style="width:38px;height:38px;border:1.5px solid var(--border);border-radius:7px;font-size:1.1rem;cursor:pointer;background:var(--surface2)">−</button>
@@ -800,7 +275,7 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
   </div>
 </div>
 
-<!-- ══ STEP 3: ロケーション ══ -->
+<!-- STEP 3 -->
 <div class="card">
   <div class="card-head"><span class="step">3</span>ロケーション</div>
   <div class="card-body">
@@ -808,65 +283,95 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
       <label>ロケーション番号<span class="opt">後で追加可</span></label>
       <div class="loc-wrap">
         <input type="text" class="mono" id="locationInput" placeholder="例: A-01-03">
-        <div class="loc-pending" onclick="setPending()" title="後で追加">⏳ 後で</div>
+        <div class="loc-pending" onclick="setPending()">⏳ 後で</div>
       </div>
     </div>
     <div id="locPendingNote" style="display:none;font-size:0.75rem;color:var(--warn);margin-top:4px;font-weight:700">
-      ⚠ ロケーション未定 — 後で登録リストから追加できます
+      ⚠ ロケーション未定
     </div>
   </div>
 </div>
 
-<!-- ══ 登録ボタン ══ -->
+<!-- 登録 -->
 <div class="card">
   <div class="submit-area">
-    <button class="btn-submit" id="submitBtn" onclick="submitEntry()">入 荷 登 録</button>
+    <button class="btn-submit" onclick="submitEntry()">入 荷 登 録</button>
     <button class="btn-reset" onclick="resetForm()">リセット</button>
   </div>
   <div class="config-toggle" onclick="toggleConfig()">⚙ API設定</div>
   <div class="config-panel" id="configPanel">
     <div class="form-row">
-      <label>Yahoo! Client ID（Application ID）</label>
-      <input type="password" id="rakutenId" placeholder="Yahoo! Client ID">
+      <label>Yahoo! Client ID</label>
+      <input type="password" id="yahooId" placeholder="Yahoo! Client ID">
     </div>
     <div class="form-row">
-      <label>Claude API Key <span class="opt">送り状OCR用</span></label>
-      <input type="password" id="claudeKey" placeholder="sk-ant-...">
-      <div style="font-size:0.7rem;color:var(--ink2);margin-top:3px">
-        ※ <a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent2)">console.anthropic.com</a> で取得。GASプロキシ経由推奨（下部コメント参照）
-      </div>
-    </div>
-    <div class="form-row">
-      <label>GASウェブアプリURL<span class="opt">スプレッドシート連携 / Claude APIプロキシ兼用</span></label>
+      <label>GASウェブアプリURL</label>
       <input type="text" id="gasUrl" placeholder="https://script.google.com/macros/s/...">
     </div>
     <button class="btn-use" style="width:100%;margin-top:4px" onclick="saveConfig()">保存</button>
   </div>
 </div>
 
-<!-- ══ 履歴 ══ -->
+<!-- 履歴 -->
 <div class="card">
   <div class="history-head">
     <span>登録履歴</span>
     <button class="btn-csv" onclick="exportCSV()">CSV出力</button>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="送り状番号 / JAN / 商品名で検索..."
+           oninput="renderHistory()" onkeydown="if(event.key==='Enter')renderHistory()">
+    <button class="btn-srch" onclick="renderHistory()">検索</button>
   </div>
   <div id="historyList"></div>
 </div>
 
 </main>
 
-<!-- ロケーション後入れモーダル -->
+<!-- 編集モーダル -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>登録内容を編集</h3>
+    <div class="modal-meta" id="editModalMeta"></div>
+    <div class="form-row"><label>到着日</label><input type="date" id="em-date"></div>
+    <div class="form-row"><label>送り状番号</label><input type="tel" class="mono" id="em-tracking"></div>
+    <div class="form-row"><label>返送元（差出人）</label><input type="text" id="em-sender"></div>
+    <div class="form-row"><label>差出人住所</label><input type="text" id="em-address"></div>
+    <div class="form-row"><label>JANコード</label><input type="tel" class="mono" id="em-jan"></div>
+    <div class="form-row"><label>商品名</label><input type="text" id="em-name"></div>
+    <div class="form-row"><label>品名</label><input type="text" id="em-desc"></div>
+    <div class="form-row"><label>数量</label><input type="tel" id="em-qty"></div>
+    <div class="form-row"><label>ロケーション</label><input type="text" class="mono" id="em-loc"></div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="saveEdit()">保存</button>
+      <button class="btn-modal-cancel" onclick="closeModal('editModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ロケーションモーダル -->
 <div class="modal-bg" id="locModal">
   <div class="modal">
     <h3>ロケーション追加</h3>
     <div class="modal-meta" id="locModalMeta"></div>
-    <div class="form-row">
-      <label>ロケーション番号</label>
-      <input type="text" class="mono" id="locModalInput" placeholder="A-01-03">
-    </div>
+    <div class="form-row"><label>ロケーション番号</label><input type="text" class="mono" id="locModalInput" placeholder="A-01-03"></div>
     <div class="modal-btns">
       <button class="btn-modal-ok" onclick="saveLocation()">登録</button>
-      <button class="btn-modal-cancel" onclick="closeLocModal()">キャンセル</button>
+      <button class="btn-modal-cancel" onclick="closeModal('locModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- 返送モーダル -->
+<div class="modal-bg" id="returnModal">
+  <div class="modal">
+    <h3>返送済みにする</h3>
+    <div class="modal-meta" id="returnModalMeta"></div>
+    <div class="form-row"><label>返送日</label><input type="date" id="rm-date"></div>
+    <div class="form-row"><label>返送先・備考<span class="opt">任意</span></label><input type="text" id="rm-note" placeholder="例: ○○倉庫へ返送"></div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" style="background:var(--returned)" onclick="saveReturn()">返送済みにする</button>
+      <button class="btn-modal-cancel" onclick="closeModal('returnModal')">キャンセル</button>
     </div>
   </div>
 </div>
@@ -874,92 +379,62 @@ input.manual-mode { border-color: var(--warn); background: #fffbf0; }
 <div id="toast"></div>
 
 <script>
-// ════════════════════════════════════════
-//  CONFIG
-// ════════════════════════════════════════
+const GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
+
 let CFG = {
-  rakutenId: localStorage.getItem('wh_rakuten_id') || '',
-  gasUrl:    localStorage.getItem('wh_gas_url') || '',
-  claudeKey: localStorage.getItem('wh_claude_key') || ''
+  yahooId: localStorage.getItem('wh_yahoo_id') || '',
+  gasUrl:  localStorage.getItem('wh_gas_url')  || ''
 };
 let history = JSON.parse(localStorage.getItem('wh_history') || '[]');
-let scanning = false;
-let lastCode = null;
-let currentProduct = null; // { name, code, brand, price }
-let locPending = false;
-let editLocIdx = null;
+let scanning = false, lastCode = null, currentProduct = null, locPending = false;
+let editIdx = null, locIdx = null, retIdx = null;
 
-// ════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════
+// INIT
 window.onload = () => {
-  // 今日の日付をデフォルト
-  const today = new Date();
-  document.getElementById('arrivalDate').value = today.toISOString().slice(0, 10);
-  updateTime();
-  setInterval(updateTime, 30000);
-
-  // 設定読み込み
-  if (CFG.rakutenId) document.getElementById('rakutenId').value = CFG.rakutenId;
-  if (CFG.gasUrl)    document.getElementById('gasUrl').value    = CFG.gasUrl;
-  if (CFG.claudeKey) document.getElementById('claudeKey').value = CFG.claudeKey;
-
-  // API未設定なら設定パネルを開く
-  if (!CFG.rakutenId) {
-    document.getElementById('configPanel').classList.add('open');
-  }
-
+  document.getElementById('arrivalDate').value = new Date().toISOString().slice(0,10);
+  updateTime(); setInterval(updateTime, 30000);
+  if (CFG.yahooId) document.getElementById('yahooId').value = CFG.yahooId;
+  if (CFG.gasUrl)  document.getElementById('gasUrl').value  = CFG.gasUrl;
+  if (!CFG.gasUrl) document.getElementById('configPanel').classList.add('open');
   renderHistory();
 };
-
 function updateTime() {
-  const now = new Date();
+  const n = new Date();
   document.getElementById('arrivalTime').value =
-    now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    n.getHours().toString().padStart(2,'0') + ':' + n.getMinutes().toString().padStart(2,'0');
 }
 
-// ════════════════════════════════════════
-//  CONFIG PANEL
-// ════════════════════════════════════════
-function toggleConfig() {
-  document.getElementById('configPanel').classList.toggle('open');
-}
+// CONFIG
+function toggleConfig() { document.getElementById('configPanel').classList.toggle('open'); }
 function saveConfig() {
-  CFG.rakutenId = document.getElementById('rakutenId').value.trim();
-  CFG.gasUrl    = document.getElementById('gasUrl').value.trim();
-  CFG.claudeKey = document.getElementById('claudeKey').value.trim();
-  localStorage.setItem('wh_rakuten_id',  CFG.rakutenId);
-  localStorage.setItem('wh_gas_url',     CFG.gasUrl);
-  localStorage.setItem('wh_claude_key',  CFG.claudeKey);
+  CFG.yahooId = document.getElementById('yahooId').value.trim();
+  CFG.gasUrl  = document.getElementById('gasUrl').value.trim();
+  localStorage.setItem('wh_yahoo_id', CFG.yahooId);
+  localStorage.setItem('wh_gas_url',  CFG.gasUrl);
   document.getElementById('configPanel').classList.remove('open');
   showToast('設定を保存しました');
 }
 
-// ════════════════════════════════════════
-//  CAMERA
-// ════════════════════════════════════════
-function toggleCamera() {
-  scanning ? stopCamera() : startCamera();
-}
+// CAMERA
+function toggleCamera() { scanning ? stopCamera() : startCamera(); }
 function startCamera() {
-  const container = document.getElementById('scanner-container');
+  document.getElementById('scanner-container').classList.add('visible');
   const btn = document.getElementById('camBtn');
-  container.classList.add('visible');
-  btn.classList.add('active');
-  btn.textContent = '⏹';
+  btn.classList.add('active'); btn.textContent = '⏹';
 
   Quagga.init({
     inputStream: {
       name: 'Live', type: 'LiveStream',
       target: document.getElementById('interactive'),
-      constraints: { facingMode: 'environment' }
+      constraints: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
     },
     decoder: { readers: ['ean_reader','ean_8_reader','code_128_reader'] },
-    locate: true
+    locate: true, numOfWorkers: 2, frequency: 10
   }, err => {
-    if (err) { setStatus('カメラ起動失敗: ' + err, 'err'); return; }
-    Quagga.start();
-    scanning = true;
+    if (err) { setStatus('カメラ起動失敗', 'err'); return; }
+    // Quaggaのcanvasを非表示（videoのみ表示してオーバーレイと一致させる）
+    document.querySelectorAll('#interactive canvas').forEach(c => c.style.cssText = 'display:none!important');
+    Quagga.start(); scanning = true;
   });
 
   Quagga.onDetected(data => {
@@ -967,101 +442,54 @@ function startCamera() {
     if (code === lastCode) return;
     lastCode = code;
     document.getElementById('janInput').value = code;
-    stopCamera();
-    searchProduct();
+    stopCamera(); searchProduct();
   });
 }
 function stopCamera() {
   if (scanning) { Quagga.stop(); scanning = false; }
   document.getElementById('scanner-container').classList.remove('visible');
   const btn = document.getElementById('camBtn');
-  btn.classList.remove('active');
-  btn.textContent = '📷';
+  btn.classList.remove('active'); btn.textContent = '📷';
   lastCode = null;
 }
 
-// ════════════════════════════════════════
-//  SEARCH
-// ════════════════════════════════════════
+// PRODUCT SEARCH
 function onJanInput() {
   const v = document.getElementById('janInput').value.trim();
-  if (v.length >= 8 && /^\d+$/.test(v)) {
-    // 自動検索は13桁時のみ
-    if (v.length === 13) searchProduct();
-  }
+  if (v.length === 13 && /^\d+$/.test(v)) searchProduct();
 }
-
 async function searchProduct() {
   const code = document.getElementById('janInput').value.trim();
   if (!code || code.length < 8) return;
-
-  if (!CFG.rakutenId) {
-    setStatus('楽天 Application IDを設定してください', 'err');
-    document.getElementById('configPanel').classList.add('open');
-    return;
-  }
-
   resetProductArea();
-  setStatus('Yahoo!ショッピングから商品検索中...', 'loading');
-
+  setStatus('Yahoo!ショッピングから検索中...', 'loading');
   try {
-    // GASプロキシ経由でYahoo!ショッピングAPIを呼び出し
-    const GAS_URL = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
-    const url = `${GAS_URL}?mode=yahoo&jan=${code}`;
+    const url = `${CFG.gasUrl || GAS_DEFAULT}?mode=yahoo&jan=${code}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-
-    if (!data.hits || data.hits.length === 0) {
-      setStatus('Yahoo!ショッピングに商品が見つかりませんでした', 'err');
-      showManualInput();
-      return;
+    if (!data.hits || !data.hits.length) {
+      setStatus('商品が見つかりませんでした', 'err'); showManualInput(); return;
     }
-
     const item = data.hits[0];
-    currentProduct = {
-      code,
-      name:  item.name,
-      brand: item.brand?.name || item.seller?.name || '',
-      price: item.price || null,
-      url:   item.url || ''
-    };
-    displayProductResult(currentProduct);
+    currentProduct = { code, name: item.name, brand: item.brand?.name || item.seller?.name || '', price: item.price || null };
+    document.getElementById('pfName').textContent = item.name;
+    document.getElementById('pfMeta').textContent =
+      `JAN: ${code}${currentProduct.brand ? '  / ' + currentProduct.brand : ''}${currentProduct.price ? '  ¥' + currentProduct.price.toLocaleString() : ''}`;
+    document.getElementById('productFound').classList.add('visible');
     setStatus('商品情報を取得しました ✓', 'ok');
-
-  } catch(e) {
-    setStatus('取得エラー: ' + e.message, 'err');
-    showManualInput();
-  }
+  } catch(e) { setStatus('取得エラー: ' + e.message, 'err'); showManualInput(); }
 }
-
-function displayProductResult(p) {
-  document.getElementById('pfName').textContent = p.name;
-  document.getElementById('pfMeta').textContent =
-    `JAN: ${p.code}　${p.brand ? '/ ' + p.brand : ''}${p.price ? '　¥' + p.price.toLocaleString() : ''}`;
-  document.getElementById('productFound').classList.add('visible');
-}
-
 function useProduct() {
-  if (!currentProduct) return;
   document.getElementById('productNameFixed').value = currentProduct.name;
   document.getElementById('productCode').value = currentProduct.code;
   document.getElementById('janInput').classList.add('filled');
   document.getElementById('productFound').classList.remove('visible');
   document.getElementById('manualNameRow').classList.remove('visible');
-  setStatus(`✓ ${currentProduct.name}`, 'ok');
+  setStatus('✓ ' + currentProduct.name, 'ok');
 }
-
-function goManual() {
-  document.getElementById('productFound').classList.remove('visible');
-  showManualInput();
-}
-
-function showManualInput() {
-  document.getElementById('manualNameRow').classList.add('visible');
-  document.getElementById('productNameManual').focus();
-}
-
+function goManual() { document.getElementById('productFound').classList.remove('visible'); showManualInput(); }
+function showManualInput() { document.getElementById('manualNameRow').classList.add('visible'); document.getElementById('productNameManual').focus(); }
 function resetProductArea() {
   currentProduct = null;
   document.getElementById('productFound').classList.remove('visible');
@@ -1071,384 +499,291 @@ function resetProductArea() {
   document.getElementById('janInput').classList.remove('filled');
 }
 
-// ════════════════════════════════════════
-//  QTY
-// ════════════════════════════════════════
+// QTY
 function changeQty(d) {
   const el = document.getElementById('qtyInput');
-  el.value = Math.max(1, (parseInt(el.value) || 1) + d);
+  el.value = Math.max(1, (parseInt(el.value)||1) + d);
 }
 
-// ════════════════════════════════════════
-//  LOCATION
-// ════════════════════════════════════════
+// LOCATION
 function setPending() {
   locPending = true;
-  document.getElementById('locationInput').value = '';
-  document.getElementById('locationInput').placeholder = '後で追加';
-  document.getElementById('locationInput').style.borderColor = 'var(--warn)';
+  const el = document.getElementById('locationInput');
+  el.value = ''; el.placeholder = '後で追加'; el.style.borderColor = 'var(--warn)';
   document.getElementById('locPendingNote').style.display = 'block';
 }
 
-// ════════════════════════════════════════
-//  SUBMIT
-// ════════════════════════════════════════
+// SUBMIT
 function submitEntry() {
-  // バリデーション
-  const date      = document.getElementById('arrivalDate').value;
-  const time      = document.getElementById('arrivalTime').value;
-  const tracking  = document.getElementById('trackingNo').value.trim();
-  const sender    = document.getElementById('senderName').value.trim();
-  const senderAddress = document.getElementById('senderAddress').value.trim();
-  const jan       = document.getElementById('janInput').value.trim();
-  const fixedName = document.getElementById('productNameFixed').value;
-  const manualName= document.getElementById('productNameManual').value.trim();
-  const productName = fixedName || manualName;
-  const qty       = parseInt(document.getElementById('qtyInput').value) || 1;
-  const location  = document.getElementById('locationInput').value.trim();
+  const date    = document.getElementById('arrivalDate').value;
+  const time    = document.getElementById('arrivalTime').value;
+  const tracking= document.getElementById('trackingNo').value.trim();
+  const sender  = document.getElementById('senderName').value.trim();
+  const sAddr   = document.getElementById('senderAddress').value.trim();
+  const jan     = document.getElementById('janInput').value.trim();
+  const pName   = document.getElementById('productNameFixed').value || document.getElementById('productNameManual').value.trim();
+  const desc    = document.getElementById('itemDescription').value.trim();
+  const qty     = parseInt(document.getElementById('qtyInput').value)||1;
+  const loc     = document.getElementById('locationInput').value.trim();
 
-  if (!date)        { shake('arrivalDate');  showToast('到着日を入力してください'); return; }
-  if (!tracking)    { shake('trackingNo');   showToast('送り状番号を入力してください'); return; }
-  if (!productName) { showToast('商品名を入力または選択してください'); return; }
+  if (!date)    { shake('arrivalDate'); showToast('到着日を入力してください'); return; }
+  if (!tracking){ shake('trackingNo'); showToast('送り状番号を入力してください'); return; }
+  if (!pName)   { showToast('商品名を入力または選択してください'); return; }
 
   const entry = {
-    id:        Date.now(),
-    date,
-    time,
-    tracking,
-    sender,
-    senderAddress,
-    jan,
-    productName,
-    qty,
-    location:  location || null,
-    locPending: !location,
+    id: Date.now(), date, time, tracking,
+    sender, senderAddress: sAddr, jan, productName: pName,
+    itemDescription: desc, qty, location: loc || null, locPending: !loc,
+    returned: false, returnedDate: null, returnNote: null,
     registeredAt: new Date().toLocaleString('ja-JP')
   };
-
-  history.unshift(entry);
-  localStorage.setItem('wh_history', JSON.stringify(history));
-  renderHistory();
+  history.unshift(entry); save(); renderHistory();
   showToast('入荷登録しました ✓');
-
   sendToGas(entry);
-
   resetForm();
 }
 
 function sendToGas(entry) {
-  const url = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
-  fetch(url, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
+  fetch(CFG.gasUrl || GAS_DEFAULT, {
+    method: 'POST', headers: {'Content-Type':'text/plain'},
     body: JSON.stringify(entry)
   }).catch(console.error);
 }
 
-// ════════════════════════════════════════
-//  RESET
-// ════════════════════════════════════════
+// RESET
 function resetForm() {
-  document.getElementById('trackingNo').value = '';
-  document.getElementById('senderName').value = '';
-  document.getElementById('senderAddress').value = '';
+  ['trackingNo','senderName','senderAddress','itemDescription'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('janInput').value = '';
   document.getElementById('qtyInput').value = '1';
-  document.getElementById('locationInput').value = '';
-  document.getElementById('locationInput').placeholder = '例: A-01-03';
-  document.getElementById('locationInput').style.borderColor = '';
+  const loc = document.getElementById('locationInput');
+  loc.value = ''; loc.placeholder = '例: A-01-03'; loc.style.borderColor = '';
   document.getElementById('locPendingNote').style.display = 'none';
-  locPending = false;
-  resetProductArea();
-  resetOcr();
-  setStatus('');
-  updateTime();
+  locPending = false; resetProductArea(); resetOcr(); setStatus(''); updateTime();
 }
 
-// ════════════════════════════════════════
-//  HISTORY
-// ════════════════════════════════════════
+// HISTORY
+function save() { localStorage.setItem('wh_history', JSON.stringify(history)); }
+
 function renderHistory() {
   const el = document.getElementById('historyList');
-  if (!history.length) {
-    el.innerHTML = '<div class="empty-hist">登録データがありません</div>';
-    return;
+  const q  = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+  let list = q ? history.filter(i =>
+    (i.tracking||'').toLowerCase().includes(q) ||
+    (i.jan||'').includes(q) ||
+    (i.productName||'').toLowerCase().includes(q) ||
+    (i.itemDescription||'').toLowerCase().includes(q) ||
+    (i.sender||'').toLowerCase().includes(q)
+  ) : history;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-hist">${q ? '検索結果なし' : '登録データがありません'}</div>`; return;
   }
-  el.innerHTML = history.map((item, idx) => {
-    const locBadge = item.locPending
-      ? `<span class="h-loc pending" onclick="openLocModal(${idx})">未定 ✏</span>`
-      : item.location ? `<span class="h-loc">${esc(item.location)}</span>` : '';
-    return `
-      <div class="h-item">
-        <div class="h-name">${esc(item.productName)}</div>
-        <div class="h-time">${item.date}</div>
-        <div class="h-meta">
-          送状: ${esc(item.tracking)}
-          ${item.sender ? ' / ' + esc(item.sender) : ''}
-          ${item.senderAddress ? ' ' + esc(item.senderAddress) : ''}
-          ${item.jan ? ' / JAN:' + item.jan : ''}
-          &nbsp;×${item.qty}
-          ${locBadge}
-        </div>
-      </div>`;
+  el.innerHTML = list.map(item => {
+    const idx = history.indexOf(item);
+    const locB = item.locPending ? `<span class="h-loc pending">未定</span>` : item.location ? `<span class="h-loc">${esc(item.location)}</span>` : '';
+    const retB = item.returned ? `<span class="h-badge-ret">返送済</span>` : '';
+    const descTxt = item.itemDescription ? ` <span style="font-weight:400;color:var(--ink2)">（${esc(item.itemDescription)}）</span>` : '';
+    return `<div class="h-item${item.returned?' returned':''}">
+      <div class="h-row1">
+        <div class="h-name">${retB}${esc(item.productName)}${descTxt}</div>
+        <div class="h-date">${item.date}</div>
+      </div>
+      <div class="h-meta">
+        ${locB}送状: ${esc(item.tracking)}${item.sender ? ' / '+esc(item.sender) : ''}${item.jan ? ' / JAN:'+item.jan : ''} ×${item.qty}${item.returned&&item.returnedDate ? ' / 返送:'+item.returnedDate : ''}
+      </div>
+      <div class="h-actions">
+        <button class="h-btn h-btn-edit" onclick="openEditModal(${idx})">✏ 編集</button>
+        ${item.locPending ? `<button class="h-btn h-btn-loc" onclick="openLocModal(${idx})">📍 ロケ追加</button>` : ''}
+        ${item.returned
+          ? `<button class="h-btn h-btn-unreturn" onclick="toggleReturn(${idx})">↩ 返送取消</button>`
+          : `<button class="h-btn h-btn-return" onclick="openReturnModal(${idx})">📦 返送済み</button>`}
+      </div>
+    </div>`;
   }).join('');
 }
 
-// ════════════════════════════════════════
-//  LOC MODAL（後入れ）
-// ════════════════════════════════════════
+// EDIT
+function openEditModal(idx) {
+  editIdx = idx; const i = history[idx];
+  document.getElementById('editModalMeta').textContent = `登録: ${i.registeredAt}`;
+  document.getElementById('em-date').value     = i.date || '';
+  document.getElementById('em-tracking').value = i.tracking || '';
+  document.getElementById('em-sender').value   = i.sender || '';
+  document.getElementById('em-address').value  = i.senderAddress || '';
+  document.getElementById('em-jan').value      = i.jan || '';
+  document.getElementById('em-name').value     = i.productName || '';
+  document.getElementById('em-desc').value     = i.itemDescription || '';
+  document.getElementById('em-qty').value      = i.qty || 1;
+  document.getElementById('em-loc').value      = i.location || '';
+  document.getElementById('editModal').classList.add('open');
+}
+function saveEdit() {
+  const i = history[editIdx];
+  i.date = document.getElementById('em-date').value;
+  i.tracking = document.getElementById('em-tracking').value.trim();
+  i.sender = document.getElementById('em-sender').value.trim();
+  i.senderAddress = document.getElementById('em-address').value.trim();
+  i.jan = document.getElementById('em-jan').value.trim();
+  i.productName = document.getElementById('em-name').value.trim();
+  i.itemDescription = document.getElementById('em-desc').value.trim();
+  i.qty = parseInt(document.getElementById('em-qty').value)||1;
+  const loc = document.getElementById('em-loc').value.trim();
+  i.location = loc || null; i.locPending = !loc;
+  save(); renderHistory(); closeModal('editModal'); showToast('編集を保存しました');
+}
+
+// LOC
 function openLocModal(idx) {
-  editLocIdx = idx;
-  const item = history[idx];
-  document.getElementById('locModalMeta').textContent =
-    `${item.productName} / 送状: ${item.tracking}`;
+  locIdx = idx; const i = history[idx];
+  document.getElementById('locModalMeta').textContent = `${i.productName} / 送状: ${i.tracking}`;
   document.getElementById('locModalInput').value = '';
   document.getElementById('locModal').classList.add('open');
   setTimeout(() => document.getElementById('locModalInput').focus(), 100);
 }
-function closeLocModal() {
-  document.getElementById('locModal').classList.remove('open');
-  editLocIdx = null;
-}
 function saveLocation() {
   const loc = document.getElementById('locModalInput').value.trim();
   if (!loc) { showToast('ロケーション番号を入力してください'); return; }
-  history[editLocIdx].location = loc;
-  history[editLocIdx].locPending = false;
-  localStorage.setItem('wh_history', JSON.stringify(history));
-  renderHistory();
-  closeLocModal();
-  showToast('ロケーションを登録しました');
+  history[locIdx].location = loc; history[locIdx].locPending = false;
+  save(); renderHistory(); closeModal('locModal'); showToast('ロケーションを登録しました');
 }
 
-// ════════════════════════════════════════
-//  CSV
-// ════════════════════════════════════════
+// RETURN
+function openReturnModal(idx) {
+  retIdx = idx; const i = history[idx];
+  document.getElementById('returnModalMeta').textContent = `${i.productName}\n送状: ${i.tracking}`;
+  document.getElementById('rm-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('rm-note').value = '';
+  document.getElementById('returnModal').classList.add('open');
+}
+function saveReturn() {
+  history[retIdx].returned = true;
+  history[retIdx].returnedDate = document.getElementById('rm-date').value;
+  history[retIdx].returnNote = document.getElementById('rm-note').value.trim();
+  save(); renderHistory(); closeModal('returnModal'); showToast('返送済みにしました');
+}
+function toggleReturn(idx) {
+  history[idx].returned = false; history[idx].returnedDate = null; history[idx].returnNote = null;
+  save(); renderHistory(); showToast('返送フラグを解除しました');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// CSV
 function exportCSV() {
   if (!history.length) { showToast('登録データがありません'); return; }
-  const header = ['登録日時','到着日','時刻','送り状番号','返送元','差出人住所','JANコード','商品名','数量','ロケーション','ロケーション未定'];
+  const header = ['登録日時','到着日','時刻','送り状番号','返送元','差出人住所','JANコード','商品名','品名','数量','ロケーション','ロケーション状態','返送済み','返送日','返送備考'];
   const rows = history.map(i => [
     i.registeredAt, i.date, i.time, i.tracking,
-    i.sender || '', i.senderAddress || '', i.jan || '', i.productName, i.qty,
-    i.location || '', i.locPending ? '未定' : '確定'
+    i.sender||'', i.senderAddress||'', i.jan||'', i.productName, i.itemDescription||'', i.qty,
+    i.location||'', i.locPending?'未定':'確定',
+    i.returned?'返送済':'未返送', i.returnedDate||'', i.returnNote||''
   ]);
-  const bom = '\uFEFF';
-  const csv = [header, ...rows]
-    .map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const csv = [header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([bom + csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `入荷ログ_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
 }
 
-// ════════════════════════════════════════
-//  STATUS / TOAST / UTILS
-// ════════════════════════════════════════
-function setStatus(msg, type = '') {
-  const el = document.getElementById('status');
-  el.className = type;
-  if (type === 'loading') {
-    el.innerHTML = `<span class="spinner"></span>${msg}`;
-  } else {
-    el.textContent = msg;
-  }
-}
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-function shake(id) {
-  const el = document.getElementById(id);
-  el.style.animation = 'none';
-  el.offsetHeight;
-  el.style.animation = 'shake 0.4s ease';
-}
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ════════════════════════════════════════
-//  OCR（Claude Vision）
-// ════════════════════════════════════════
-function triggerOcr() {
-  document.getElementById('ocrFileInput').click();
-}
+// OCR
+function triggerOcr() { document.getElementById('ocrFileInput').click(); }
 
 async function handleOcrImage(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  // プレビュー表示
-  const reader = new FileReader();
-  reader.onload = async (ev) => {
-    const base64 = ev.target.result; // data:image/jpeg;base64,...
-    const base64Data = base64.split(',')[1];
-    const mimeType = file.type || 'image/jpeg';
-
-    document.getElementById('ocrPreview').src = base64;
-    document.getElementById('ocrPreviewWrap').classList.add('visible');
-    document.getElementById('ocrResultBox').classList.remove('visible');
-    document.getElementById('ocrErr').classList.remove('visible');
-    document.getElementById('ocrOverlay').classList.add('visible');
-
-    try {
-      const result = await callClaudeOcr(base64Data, mimeType);
-      document.getElementById('ocrOverlay').classList.remove('visible');
-      showOcrResult(result);
-    } catch(err) {
-      document.getElementById('ocrOverlay').classList.remove('visible');
-      const errEl = document.getElementById('ocrErr');
-      errEl.textContent = '読み取りエラー: ' + err.message;
-      errEl.classList.add('visible');
-    }
-  };
-  reader.readAsDataURL(file);
-  // input リセット（同じ画像を再選択できるように）
+  const file = e.target.files[0]; if (!file) return;
+  const resized = await resizeImage(file, 1600);
+  const base64Data = resized.split(',')[1];
+  document.getElementById('ocrPreview').src = resized;
+  document.getElementById('ocrPreviewWrap').classList.add('visible');
+  document.getElementById('ocrResultBox').classList.remove('visible');
+  document.getElementById('ocrErr').classList.remove('visible');
+  document.getElementById('ocrOverlay').classList.add('visible');
+  try {
+    const result = await callClaudeOcr(base64Data);
+    document.getElementById('ocrOverlay').classList.remove('visible');
+    showOcrResult(result);
+  } catch(err) {
+    document.getElementById('ocrOverlay').classList.remove('visible');
+    const el = document.getElementById('ocrErr');
+    el.textContent = '読み取りエラー: ' + err.message; el.classList.add('visible');
+  }
   e.target.value = '';
 }
 
-async function callClaudeOcr(base64Data, mimeType) {
-  const GAS_URL = CFG.gasUrl || 'https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
-
-  const prompt = `この画像は日本の宅配便の送り状（伝票）です。以下の情報を読み取り、必ずJSON形式のみで返してください。他の文字は一切含めないでください。
-
-{"tracking_number":"送り状番号（数字とハイフンのみ、なければnull）","sender_name":"差出人の氏名または会社名（なければnull）","sender_address":"差出人の住所（都道府県から番地まで、なければnull）"}
-
-注意: 送り状番号は12〜14桁の数字、差出人は「ご依頼主」「差出人」ラベルの近く、住所は都道府県名から始まる。読み取れない部分はnull。`;
-
-  const body = JSON.stringify({
-    mode: 'ocr',
-    image: base64Data,
-    mimeType: mimeType,
-    prompt: prompt
+function resizeImage(file, maxWidth) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
   });
+}
 
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // GASはapplication/jsonだとpreflightが飛ぶためtext/plainで回避
-    body: body
+async function callClaudeOcr(base64Data) {
+  const gasUrl = CFG.gasUrl || GAS_DEFAULT;
+  const prompt = `この画像は日本の宅配便の送り状（伝票）です。ヤマト運輸・佐川急便・日本郵便・その他運送会社に対応しています。
+以下の情報を読み取り、必ずJSON形式のみで返してください。説明文や記号を前後に含めないでください。
+
+{"tracking_number":"送り状番号（ハイフン含む数字列、なければnull）","sender_name":"差出人の氏名または会社名（なければnull）","sender_address":"差出人の住所（都道府県から番地まで、なければnull）"}
+
+ヒント: ヤマト=「ご依頼主」欄・12桁、佐川=お届け先の反対側・12桁、郵便=「差出人」欄。読み取れない項目はnull。`;
+
+  const res = await fetch(gasUrl, {
+    method: 'POST', headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify({ mode: 'ocr', image: base64Data, mimeType: 'image/jpeg', prompt })
   });
   if (!res.ok) throw new Error('GAS error: ' + res.status);
   const d = await res.json();
+  if (d.error) throw new Error(d.error);
   if (!d.text) throw new Error('レスポンスが空です');
-
-  const clean = d.text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
+  return JSON.parse(d.text.replace(/```json|```/g,'').trim());
 }
 
-function showOcrResult(result) {
-  document.getElementById('ocrTracking').value = result.tracking_number || '';
-  document.getElementById('ocrSender').value   = result.sender_name    || '';
-  document.getElementById('ocrAddress').value  = result.sender_address || '';
+function showOcrResult(r) {
+  document.getElementById('ocrTracking').value = r.tracking_number || '';
+  document.getElementById('ocrSender').value   = r.sender_name    || '';
+  document.getElementById('ocrAddress').value  = r.sender_address || '';
   document.getElementById('ocrResultBox').classList.add('visible');
 }
-
 function applyOcrResult() {
-  const tracking = document.getElementById('ocrTracking').value.trim();
-  const sender   = document.getElementById('ocrSender').value.trim();
-  const address  = document.getElementById('ocrAddress').value.trim();
-
-  if (tracking) document.getElementById('trackingNo').value   = tracking;
-  if (sender)   document.getElementById('senderName').value   = sender;
-  if (address)  document.getElementById('senderAddress').value = address;
-
+  const t = document.getElementById('ocrTracking').value.trim();
+  const s = document.getElementById('ocrSender').value.trim();
+  const a = document.getElementById('ocrAddress').value.trim();
+  if (t) document.getElementById('trackingNo').value    = t;
+  if (s) document.getElementById('senderName').value    = s;
+  if (a) document.getElementById('senderAddress').value = a;
   document.getElementById('ocrResultBox').classList.remove('visible');
   document.getElementById('ocrPreviewWrap').classList.remove('visible');
   showToast('フォームに反映しました ✓');
 }
-
 function resetOcr() {
-  document.getElementById('ocrPreviewWrap').classList.remove('visible');
-  document.getElementById('ocrResultBox').classList.remove('visible');
-  document.getElementById('ocrErr').classList.remove('visible');
-  document.getElementById('ocrOverlay').classList.remove('visible');
+  ['ocrPreviewWrap','ocrResultBox','ocrErr','ocrOverlay'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
   document.getElementById('ocrPreview').src = '';
 }
 
-// ════════════════════════════════════════
-const style = document.createElement('style');
-style.textContent = `@keyframes shake {
-  0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 60%{transform:translateX(6px)} 80%{transform:translateX(-3px)}
-}`;
-document.head.appendChild(style);
+// UTILS
+function setStatus(msg, type='') {
+  const el = document.getElementById('status'); el.className = type;
+  el.innerHTML = type==='loading' ? `<span class="spinner"></span>${msg}` : msg;
+}
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200);
+}
+function shake(id) {
+  const el = document.getElementById(id); el.style.animation = 'none'; el.offsetHeight;
+  el.style.animation = 'shake 0.4s ease';
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
-
-<!--
-══════════════════════════════════════════════════════════
-  GAS コード.gs（スプレッドシート記録 + Claude OCRプロキシ）
-══════════════════════════════════════════════════════════
-
-// ── スプレッドシート記録 ──
-function doPost(e) {
-  const params = e.parameter;
-
-  // OCRプロキシモード
-  if (params.mode === 'ocr' || (e.postData && e.postData.contents)) {
-    try {
-      const body = JSON.parse(e.postData.contents);
-      if (body.image) return handleOcrProxy(body);
-    } catch(ex) {}
-  }
-
-  // 通常の入荷登録
-  const d = JSON.parse(e.postData.contents);
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName('入荷ログ');
-  if (!sh) {
-    sh = ss.insertSheet('入荷ログ');
-    sh.appendRow(['登録日時','到着日','時刻','送り状番号','返送元','差出人住所',
-                  'JANコード','商品名','数量','ロケーション','ロケーション状態']);
-    sh.setFrozenRows(1);
-  }
-  sh.appendRow([
-    d.registeredAt, d.date, d.time, d.tracking,
-    d.sender||'', d.senderAddress||'', d.jan||'', d.productName, d.qty,
-    d.location||'', d.locPending ? '未定' : '確定'
-  ]);
-  return ContentService.createTextOutput('ok');
-}
-
-// ── Claude OCR プロキシ ──
-function handleOcrProxy(body) {
-  const CLAUDE_API_KEY = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
-  const payload = {
-    model: 'claude-opus-4-5',
-    max_tokens: 512,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: body.mimeType, data: body.image } },
-        { type: 'text',  text: body.prompt }
-      ]
-    }]
-  };
-  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'x-api-key': CLAUDE_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    payload: JSON.stringify(payload)
-  });
-  const data = JSON.parse(res.getContentText());
-  return ContentService.createTextOutput(
-    JSON.stringify({ text: data.content[0].text })
-  ).setMimeType(ContentService.MimeType.JSON);
-}
-
-// ── スクリプトプロパティ設定 ──
-// GASエディタ > プロジェクトの設定 > スクリプトプロパティ
-// CLAUDE_API_KEY = sk-ant-xxxxxx
-// RAKUTEN_APP_ID = xxxxxxxx
-
-// デプロイ:
-// デプロイ → ウェブアプリ / 実行者: 自分 / アクセス: 全員（匿名含む）
-// 発行URLをアプリ内「GASウェブアプリURL」に設定
-══════════════════════════════════════════════════════════
--->
 </body>
 </html>
