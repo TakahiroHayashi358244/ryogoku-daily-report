@@ -544,10 +544,22 @@ function submitEntry() {
 }
 
 function sendToGas(entry) {
-  fetch(CFG.gasUrl || GAS_DEFAULT, {
-    method: 'POST', headers: {'Content-Type':'text/plain'},
-    body: JSON.stringify(entry)
-  }).catch(console.error);
+  _postToGas({ ...entry });
+}
+
+// GAS同期（更新）
+function syncToGas(entry) {
+  _postToGas({ ...entry, mode: 'update' });
+}
+
+function _postToGas(payload) {
+  const url = CFG.gasUrl || GAS_DEFAULT;
+  fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(payload)
+  }).catch(e => console.error('GAS送信エラー:', e));
 }
 
 // RESET
