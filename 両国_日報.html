@@ -896,14 +896,28 @@ function loadLogs()  {
 // ============================================================
 // タブ切り替え
 // ============================================================
+// タブ切り替えのたびに認証状態をリセット
+let settingsAuthenticated = false;
+let staffAuthenticated    = false;
+
 function switchTab(name, btn) {
+  // 設定・スタッフタブから離れたら認証リセット
+  if (name !== 'settings') {
+    settingsAuthenticated = false;
+    sessionStorage.removeItem('settings_auth');
+  }
+  if (name !== 'staff') {
+    staffAuthenticated = false;
+    sessionStorage.removeItem('staff_auth');
+  }
+
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(name + '-tab').classList.add('active');
   btn.classList.add('active');
-  if (name === 'list') renderLogs();
+  if (name === 'list')     renderLogs();
   if (name === 'settings') initSettingsTab();
-  if (name === 'staff') initStaffTab();
+  if (name === 'staff')    initStaffTab();
 }
 
 // パスワード機能
@@ -914,10 +928,9 @@ function getPassword() {
 }
 
 function initSettingsTab() {
-  const authenticated = sessionStorage.getItem('settings_auth') === 'true';
-  document.getElementById('password-gate').style.display    = authenticated ? 'none'  : 'block';
-  document.getElementById('settings-content').style.display = authenticated ? 'block' : 'none';
-  if (!authenticated) {
+  document.getElementById('password-gate').style.display    = settingsAuthenticated ? 'none'  : 'block';
+  document.getElementById('settings-content').style.display = settingsAuthenticated ? 'block' : 'none';
+  if (!settingsAuthenticated) {
     document.getElementById('settingsPassword').value = '';
     setTimeout(() => document.getElementById('settingsPassword').focus(), 100);
   }
@@ -926,7 +939,7 @@ function initSettingsTab() {
 function checkPassword() {
   const input = document.getElementById('settingsPassword').value;
   if (input === getPassword()) {
-    sessionStorage.setItem('settings_auth', 'true');
+    settingsAuthenticated = true;
     document.getElementById('password-gate').style.display    = 'none';
     document.getElementById('settings-content').style.display = 'block';
   } else {
@@ -951,16 +964,19 @@ function changePassword() {
 let staffData = []; // 現在の編集中スタッフデータ
 
 function initStaffTab() {
-  const authenticated = sessionStorage.getItem('staff_auth') === 'true';
-  document.getElementById('staff-password-gate').style.display = authenticated ? 'none'  : 'block';
-  document.getElementById('staff-content').style.display       = authenticated ? 'block' : 'none';
-  if (authenticated && staffData.length === 0) loadStaff();
+  document.getElementById('staff-password-gate').style.display = staffAuthenticated ? 'none'  : 'block';
+  document.getElementById('staff-content').style.display       = staffAuthenticated ? 'block' : 'none';
+  if (!staffAuthenticated) {
+    document.getElementById('staffPassword').value = '';
+    setTimeout(() => document.getElementById('staffPassword').focus(), 100);
+  }
+  if (staffAuthenticated && staffData.length === 0) loadStaff();
 }
 
 function checkStaffPassword() {
   const input = document.getElementById('staffPassword').value;
   if (input === getPassword()) {
-    sessionStorage.setItem('staff_auth', 'true');
+    staffAuthenticated = true;
     document.getElementById('staff-password-gate').style.display = 'none';
     document.getElementById('staff-content').style.display       = 'block';
     loadStaff();
