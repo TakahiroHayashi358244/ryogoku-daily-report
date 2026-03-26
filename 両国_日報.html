@@ -156,6 +156,63 @@
     }
     .staff-item.checked { border-color: var(--check-on); }
 
+    .staff-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0ede8;
+    }
+    .staff-row:last-child { border-bottom: none; }
+    .staff-row input[type="text"],
+    .staff-row input[type="number"] {
+      padding: 8px 10px;
+      border: 1.5px solid #e0ddd8;
+      border-radius: 8px;
+      font-size: 14px;
+      background: var(--pale);
+      width: 100%;
+    }
+    .staff-row-detail {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 8px 0 4px;
+    }
+    .staff-type-toggle {
+      display: flex;
+      border: 1.5px solid #e0ddd8;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 13px;
+    }
+    .staff-type-toggle button {
+      flex: 1;
+      padding: 7px 4px;
+      border: none;
+      background: var(--pale);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      transition: all .2s;
+    }
+    .staff-type-toggle button.active {
+      background: var(--ink);
+      color: #fff;
+      font-weight: 700;
+    }
+    .staff-delete-btn {
+      background: none;
+      border: 1.5px solid #e0ddd8;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #cc4444;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
     .staff-header {
       display: flex;
       align-items: center;
@@ -367,6 +424,7 @@
 <div class="tabs">
   <button class="tab-btn active" onclick="switchTab('input', this)">入力</button>
   <button class="tab-btn" onclick="switchTab('list', this)">履歴</button>
+  <button class="tab-btn" onclick="switchTab('staff', this)">スタッフ</button>
   <button class="tab-btn" onclick="switchTab('settings', this)">設定</button>
 </div>
 
@@ -420,7 +478,41 @@
   </div>
 
   <!-- ========== 設定タブ ========== -->
-  <div id="settings-tab" class="tab-content">
+  <div id="staff-tab" class="tab-content">
+  <!-- パスワードゲート -->
+  <div class="card" id="staff-password-gate">
+    <div class="card-title">スタッフ管理</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">
+      スタッフ情報はスプレッドシートに直接反映されます
+    </p>
+    <div class="form-row">
+      <label>パスワード</label>
+      <input type="password" id="staffPassword" placeholder="パスワードを入力"
+             style="width:100%;padding:13px 14px;border:1.5px solid #e0ddd8;border-radius:12px;font-size:17px;background:var(--pale);"
+             onkeydown="if(event.key==='Enter')checkStaffPassword()">
+    </div>
+    <button class="btn-submit" onclick="checkStaffPassword()" style="margin-top:8px;">認証</button>
+  </div>
+
+  <!-- スタッフ管理コンテンツ -->
+  <div id="staff-content" style="display:none;">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;">スタッフ一覧</div>
+        <button onclick="addStaffRow()" style="background:var(--gold);color:var(--ink);border:none;border-radius:10px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer;">＋ 追加</button>
+      </div>
+      <div id="staff-list-container">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:14px;">読込中...</div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:10px;">
+        <button class="btn-submit" onclick="saveStaff()" style="flex:1;">スプレッドシートに保存</button>
+        <button class="btn-secondary" onclick="loadStaff()" style="flex:0 0 auto;">再読込</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="settings-tab" class="tab-content">
     <div class="card" id="password-gate" style="display:none;">
       <div class="card-title">パスワード認証</div>
       <div class="form-row">
@@ -809,6 +901,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   if (name === 'list') renderLogs();
   if (name === 'settings') initSettingsTab();
+  if (name === 'staff') initStaffTab();
 }
 
 // パスワード機能
@@ -847,6 +940,198 @@ function changePassword() {
   localStorage.setItem('ryogoku_password', newPw);
   document.getElementById('newPassword').value = '';
   alert('✅ パスワードを変更しました');
+}
+
+// ============================================================
+// スタッフ管理
+// ============================================================
+
+let staffData = []; // 現在の編集中スタッフデータ
+
+function initStaffTab() {
+  const authenticated = sessionStorage.getItem('staff_auth') === 'true';
+  document.getElementById('staff-password-gate').style.display = authenticated ? 'none'  : 'block';
+  document.getElementById('staff-content').style.display       = authenticated ? 'block' : 'none';
+  if (authenticated && staffData.length === 0) loadStaff();
+}
+
+function checkStaffPassword() {
+  const input = document.getElementById('staffPassword').value;
+  if (input === getPassword()) {
+    sessionStorage.setItem('staff_auth', 'true');
+    document.getElementById('staff-password-gate').style.display = 'none';
+    document.getElementById('staff-content').style.display       = 'block';
+    loadStaff();
+  } else {
+    alert('パスワードが違います');
+    document.getElementById('staffPassword').value = '';
+  }
+}
+
+function loadStaff() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url) { alert('設定タブでGAS URLを設定してください'); return; }
+
+  document.getElementById('staff-list-container').innerHTML =
+    '<div style="text-align:center;padding:20px;color:var(--muted);font-size:14px;">読込中...</div>';
+
+  const cbName = '_staffDetailCb_' + Date.now();
+  const script = document.createElement('script');
+  script.src = `${url}?action=getStaffDetail&callback=${cbName}`;
+
+  window[cbName] = function(res) {
+    document.head.removeChild(script);
+    delete window[cbName];
+    if (res.success && res.data?.staff) {
+      staffData = res.data.staff.map(s => ({...s}));
+      renderStaffList();
+    } else {
+      document.getElementById('staff-list-container').innerHTML =
+        '<div style="color:red;padding:12px;">読込失敗</div>';
+    }
+  };
+
+  script.onerror = () => {
+    document.getElementById('staff-list-container').innerHTML =
+      '<div style="color:red;padding:12px;">接続エラー</div>';
+    delete window[cbName];
+  };
+  document.head.appendChild(script);
+}
+
+function renderStaffList() {
+  const container = document.getElementById('staff-list-container');
+  if (staffData.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">スタッフなし</div>';
+    return;
+  }
+
+  container.innerHTML = staffData.map((s, i) => `
+    <div class="staff-row" id="staff-row-${i}">
+      <input type="text" value="${s.name}" placeholder="氏名"
+             oninput="staffData[${i}].name=this.value" style="grid-column:1;">
+      <button class="staff-delete-btn" onclick="deleteStaffRow(${i})">✕</button>
+    </div>
+    <div class="staff-row-detail">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">種別</div>
+        <div class="staff-type-toggle">
+          <button onclick="setStaffType(${i}, false)"
+                  class="${!s.isFixed ? 'active' : ''}">時給</button>
+          <button onclick="setStaffType(${i}, true)"
+                  class="${s.isFixed ? 'active' : ''}">月額固定</button>
+        </div>
+      </div>
+      <div id="staff-rate-${i}">
+        ${s.isFixed
+          ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">月額固定金額（円）</div>
+             <input type="number" value="${s.fixedAmount}" min="0" step="1000"
+                    oninput="staffData[${i}].fixedAmount=Number(this.value)"
+                    style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
+          : `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">時給（円）</div>
+             <input type="number" value="${s.hourlyRate}" min="0" step="50"
+                    oninput="staffData[${i}].hourlyRate=Number(this.value)"
+                    style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale__);">`
+        }
+      </div>
+    </div>
+  `).join('<hr style="border:none;border-top:1.5px solid #f0ede8;margin:4px 0;">');
+}
+
+function setStaffType(idx, isFixed) {
+  staffData[idx].isFixed = isFixed;
+  renderStaffList();
+}
+
+function deleteStaffRow(idx) {
+  if (!confirm(`「${staffData[idx].name}」を削除しますか？`)) return;
+  staffData.splice(idx, 1);
+  renderStaffList();
+}
+
+function addStaffRow() {
+  staffData.push({ name: '', hourlyRate: 1300, isFixed: false, fixedAmount: 0 });
+  renderStaffList();
+  // 追加した行の入力欄にフォーカス
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#staff-list-container input[type="text"]');
+    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+  }, 100);
+}
+
+async function saveStaff() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url) { alert('設定タブでGAS URLを設定してください'); return; }
+
+  // バリデーション
+  const invalid = staffData.find(s => !s.name.trim());
+  if (invalid) { alert('氏名が空のスタッフがいます'); return; }
+
+  const btn = document.querySelector('#staff-content .btn-submit');
+  btn.textContent = '保存中...';
+  btn.disabled = true;
+
+  try {
+    const payload = JSON.stringify({
+      action: 'updateStaff',
+      staff: staffData.map(s => ({
+        name:        s.name.trim(),
+        hourlyRate:  s.hourlyRate  || 0,
+        isFixed:     s.isFixed     || false,
+        fixedAmount: s.fixedAmount || 0
+      }))
+    });
+
+    const res = await fetch(`${url}?action=updateStaff&data=${encodeURIComponent(payload)}`);
+    const json = await res.json();
+
+    if (json.success) {
+      alert(`✅ ${json.message}`);
+      // 入力フォームのスタッフ一覧も更新
+      STAFF = null;
+      loadStaffList();
+    } else {
+      alert('保存失敗: ' + json.message);
+    }
+  } catch(e) {
+    // CORS回避でGETフォールバック
+    try {
+      const cbName = '_saveStaffCb_' + Date.now();
+      const script = document.createElement('script');
+      const payload = encodeURIComponent(JSON.stringify({
+        staff: staffData.map(s => ({
+          name:        s.name.trim(),
+          hourlyRate:  s.hourlyRate  || 0,
+          isFixed:     s.isFixed     || false,
+          fixedAmount: s.fixedAmount || 0
+        }))
+      }));
+      script.src = `${url}?action=updateStaff&data=${payload}&callback=${cbName}`;
+
+      await new Promise((resolve, reject) => {
+        window[cbName] = function(res) {
+          document.head.removeChild(script);
+          delete window[cbName];
+          if (res.success) {
+            alert('✅ ' + res.message);
+            STAFF = null;
+            loadStaffList();
+            resolve();
+          } else {
+            alert('保存失敗: ' + res.message);
+            reject(new Error(res.message));
+          }
+        };
+        script.onerror = () => { delete window[cbName]; reject(new Error('接続エラー')); };
+        document.head.appendChild(script);
+      });
+    } catch(e2) {
+      alert('保存エラー: ' + e2.message);
+    }
+  } finally {
+    btn.textContent = 'スプレッドシートに保存';
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
