@@ -813,6 +813,7 @@ async function syncFromGas() {
     imported.sort((a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : 0));
     history = imported;
     save();
+    document.getElementById('searchInput').value = '';
     renderHistory();
 
     const filterLabel = filter === 'unreturned' ? '未返送' : filter === 'returned' ? '返送済み' : '全件';
