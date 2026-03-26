@@ -157,29 +157,31 @@
     .staff-item.checked { border-color: var(--check-on); }
 
     .staff-row {
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
+      display: flex;
       gap: 8px;
       align-items: center;
       padding: 10px 0;
       border-bottom: 1px solid #f0ede8;
     }
     .staff-row:last-child { border-bottom: none; }
-    .staff-row input[type="text"],
-    .staff-row input[type="number"] {
-      padding: 8px 10px;
+    .staff-row input[type="text"] {
+      flex: 1;
+      padding: 10px 12px;
       border: 1.5px solid #e0ddd8;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 15px;
       background: var(--pale);
-      width: 100%;
+      min-width: 0;
     }
     .staff-row-detail {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      display: flex;
+      gap: 12px;
       padding: 8px 0 4px;
+      flex-wrap: wrap;
+    }
+    .staff-row-detail > div {
+      flex: 1;
+      min-width: 120px;
     }
     .staff-type-toggle {
       display: flex;
@@ -504,9 +506,9 @@
       <div id="staff-list-container">
         <div style="text-align:center;padding:20px;color:var(--muted);font-size:14px;">読込中...</div>
       </div>
-      <div style="margin-top:16px;display:flex;gap:10px;">
-        <button class="btn-submit" onclick="saveStaff()" style="flex:1;">スプレッドシートに保存</button>
-        <button class="btn-secondary" onclick="loadStaff()" style="flex:0 0 auto;">再読込</button>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">
+        <button class="btn-submit" onclick="saveStaff()" style="width:100%;">スプレッドシートに保存</button>
+        <button class="btn-secondary" onclick="loadStaff()" style="width:100%;">再読込</button>
       </div>
     </div>
   </div>
