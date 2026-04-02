@@ -49,16 +49,17 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .pf-actions{display:flex;gap:8px;margin-top:10px}
 .btn-use{flex:1;background:var(--ok);color:#fff;border:none;border-radius:7px;padding:9px;font-weight:700;font-size:0.85rem;cursor:pointer}
 /* OCR */
-.ocr-btns-row{display:flex;gap:8px;margin-bottom:12px}
-.ocr-trigger{display:flex;align-items:center;gap:10px;padding:11px 12px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none;flex:1}
+.ocr-trigger{display:flex;align-items:center;gap:12px;padding:13px 14px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none;margin-bottom:12px}
 .ocr-trigger:hover{opacity:0.88}
-.ocr-trigger.fast{background:linear-gradient(135deg,#0f2a1a 0%,#1a3a2a 100%);border-color:#2a4a3a}
-.ocr-icon{font-size:1.4rem;flex-shrink:0}
-.ocr-label{color:#fff;min-width:0}
-.ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:0.88rem;letter-spacing:0.08em;white-space:nowrap}
-.ocr-label span{font-size:0.64rem;color:#aaa;display:block}
-.badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
-.badge-fast{display:inline-block;background:var(--ok);color:#fff;font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.ocr-icon{font-size:1.5rem;flex-shrink:0}
+.ocr-label{color:#fff}
+.ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em}
+.ocr-label span{font-size:0.72rem;color:#aaa}
+.badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.scan-btn{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2);border-radius:6px;padding:6px 10px;font-size:0.72rem;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all 0.15s}
+.scan-btn:hover{background:var(--ok);border-color:var(--ok);color:#fff}
+.input-scan-row{display:flex;gap:6px;align-items:center}
+.input-scan-row input{flex:1;min-width:0}
 .tess-progress-wrap{display:none;margin-bottom:10px;background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:10px 14px}
 .tess-progress-wrap.visible{display:block}
 .tess-progress-label{font-size:0.75rem;color:var(--ok);font-weight:700;margin-bottom:6px}
@@ -180,26 +181,17 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="card-head"><span class="step">1</span>返品情報</div>
   <div class="card-body">
 
-    <!-- OCR 2ボタン -->
-    <div class="ocr-btns-row">
-      <div class="ocr-trigger fast" onclick="triggerFastOcr()">
-        <div class="ocr-icon">⚡</div>
-        <div class="ocr-label">
-          <strong>高速スキャン<span class="badge-fast">LOCAL</span></strong>
-          <span>端末内で即時解析</span>
-        </div>
-      </div>
-      <div class="ocr-trigger" onclick="triggerAiOcr()">
-        <div class="ocr-icon">🤖</div>
-        <div class="ocr-label">
-          <strong>AI解析<span class="badge-ocr">Claude</span></strong>
-          <span>高精度・数秒かかる</span>
-        </div>
+    <!-- OCR: AI解析ボタン（上段）-->
+    <div class="ocr-trigger" onclick="triggerAiOcr()">
+      <div class="ocr-icon">🤖</div>
+      <div class="ocr-label">
+        <strong>送り状をスキャン<span class="badge-ocr">AI</span></strong>
+        <span>撮影→テキスト認識→各欄に反映</span>
       </div>
     </div>
-    <input type="file" id="ocrFileInputFast" accept="image/*" capture="environment" onchange="handleFastOcr(event)">
-    <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)">
-    <!-- Tesseract進捗 -->
+    <input type="file" id="ocrFileInputFast" accept="image/*" capture="environment" onchange="handleFastOcr(event)" style="display:none">
+    <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)" style="display:none">
+    <!-- Tesseract進捗（高速スキャン用）-->
     <div class="tess-progress-wrap" id="tessProgress">
       <div class="tess-progress-label" id="tessLabel">解析中...</div>
       <div class="tess-bar-bg"><div class="tess-bar" id="tessBar"></div></div>
@@ -232,15 +224,24 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>旧送り状番号<span class="req">*</span></label>
-      <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
+      <div class="input-scan-row">
+        <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
+        <button class="scan-btn" onclick="triggerFastOcrFor('oldTrackingNo')">⚡ スキャン</button>
+      </div>
     </div>
     <div class="form-row">
       <label>返送時の送り状番号<span class="opt">任意</span></label>
-      <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
+      <div class="input-scan-row">
+        <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
+        <button class="scan-btn" onclick="triggerFastOcrFor('returnTrackingNo')">⚡ スキャン</button>
+      </div>
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
-      <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
+      <div class="input-scan-row">
+        <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
+        <button class="scan-btn" onclick="triggerFastOcrFor('recipientName')">⚡ スキャン</button>
+      </div>
     </div>
     <div class="form-row">
       <label>受取人住所<span class="opt">任意</span></label>
@@ -248,7 +249,10 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>商品名・荷姿<span class="req">*</span></label>
-      <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
+      <div class="input-scan-row">
+        <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
+        <button class="scan-btn" onclick="triggerFastOcrFor('itemName')">⚡ スキャン</button>
+      </div>
     </div>
     <div class="form-row">
       <label>返送理由<span class="opt">任意</span></label>
@@ -835,7 +839,11 @@ async function getTessWorker() {
 }
 
 // ⚡ 高速スキャン（Tesseract.js）
-function triggerFastOcr() { document.getElementById('ocrFileInputFast').click(); }
+// targetFieldId: 直接セットしたいフィールドのID（省略時はトークン一覧を表示）
+let _fastOcrTarget = null;
+function triggerFastOcr() { _fastOcrTarget = null; document.getElementById('ocrFileInputFast').click(); }
+function triggerFastOcrFor(fieldId) { _fastOcrTarget = fieldId; document.getElementById('ocrFileInputFast').click(); }
+
 async function handleFastOcr(e) {
   const file = e.target.files[0]; if (!file) return;
   e.target.value = '';
@@ -858,7 +866,14 @@ async function handleFastOcr(e) {
       .filter(l => l.length >= 2 && !/^[\s\-_=\.\,\/]+$/.test(l));
     // 重複除去
     const unique = [...new Set(lines)].slice(0, 25);
-    showOcrTokens(unique, '⚡ 高速スキャン結果');
+    // 直接セットモード
+    if (_fastOcrTarget && unique.length > 0) {
+      document.getElementById(_fastOcrTarget).value = unique[0];
+      showToast('スキャン完了 ✓');
+      _fastOcrTarget = null;
+    } else {
+      showOcrTokens(unique, '⚡ 高速スキャン結果');
+    }
   } catch(err) {
     document.getElementById('tessProgress').classList.remove('visible');
     const el = document.getElementById('ocrErr');
