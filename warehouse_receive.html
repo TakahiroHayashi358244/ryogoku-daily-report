@@ -237,8 +237,10 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>旧送り状番号<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
-        <button class="btn-field-scan" id="fsBtn_oldTrackingNo" onclick="toggleFieldScan('oldTrackingNo')">📷 スキャン</button>
+        <button class="btn-field-scan" id="fsBtn_oldTrackingNo" onclick="toggleFieldScan('oldTrackingNo')">📷</button>
+        <button class="btn-field-ocr" id="ocrBtn_oldTrackingNo" onclick="startFieldOcr('oldTrackingNo','eng')">🔤</button>
       </div>
+      <div class="ocr-prog" id="ocrProg_oldTrackingNo">読み取り中...</div>
       <div class="field-scanner" id="fs_oldTrackingNo">
         <div id="fs_interactive_oldTrackingNo"></div>
         <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
@@ -248,8 +250,10 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>返送時の送り状番号<span class="opt">任意</span></label>
       <div class="input-scan-row">
         <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
-        <button class="btn-field-scan" id="fsBtn_returnTrackingNo" onclick="toggleFieldScan('returnTrackingNo')">📷 スキャン</button>
+        <button class="btn-field-scan" id="fsBtn_returnTrackingNo" onclick="toggleFieldScan('returnTrackingNo')">📷</button>
+        <button class="btn-field-ocr" id="ocrBtn_returnTrackingNo" onclick="startFieldOcr('returnTrackingNo','eng')">🔤</button>
       </div>
+      <div class="ocr-prog" id="ocrProg_returnTrackingNo">読み取り中...</div>
       <div class="field-scanner" id="fs_returnTrackingNo">
         <div id="fs_interactive_returnTrackingNo"></div>
         <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
@@ -259,8 +263,10 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>受取人氏名<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
-        <button class="btn-field-scan" id="fsBtn_recipientName" onclick="toggleFieldScan('recipientName')">📷 スキャン</button>
+        <button class="btn-field-scan" id="fsBtn_recipientName" onclick="toggleFieldScan('recipientName')">📷</button>
+        <button class="btn-field-ocr" id="ocrBtn_recipientName" onclick="startFieldOcr('recipientName','jpn+eng')">🔤</button>
       </div>
+      <div class="ocr-prog" id="ocrProg_recipientName">読み取り中...</div>
       <div class="field-scanner" id="fs_recipientName">
         <div id="fs_interactive_recipientName"></div>
         <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
@@ -274,8 +280,10 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>商品名・荷姿<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
-        <button class="btn-field-scan" id="fsBtn_itemName" onclick="toggleFieldScan('itemName')">📷 スキャン</button>
+        <button class="btn-field-scan" id="fsBtn_itemName" onclick="toggleFieldScan('itemName')">📷</button>
+        <button class="btn-field-ocr" id="ocrBtn_itemName" onclick="startFieldOcr('itemName','jpn+eng')">🔤</button>
       </div>
+      <div class="ocr-prog" id="ocrProg_itemName">読み取り中...</div>
       <div class="field-scanner" id="fs_itemName">
         <div id="fs_interactive_itemName"></div>
         <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
@@ -464,6 +472,16 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <button class="btn-modal-ok" onclick="syncFromGas()">読み込む</button>
       <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
     </div>
+  </div>
+</div>
+
+<!-- OCR カメラキャプチャ -->
+<div class="ocr-capture" id="ocrCapture">
+  <video id="ocrCapVideo" autoplay playsinline muted></video>
+  <div class="ocr-cap-bar">
+    <span class="ocr-cap-hint" id="ocrCapHint">シャッターを押して撮影</span>
+    <button class="ocr-cap-close" onclick="closeOcrCapture()">キャンセル</button>
+    <button class="ocr-cap-btn" onclick="shootOcrCapture()">📸 撮影</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -811,6 +829,109 @@ async function syncFromGas(){
   finally{btn.textContent='↓ シート読込';btn.disabled=false;}
 }
 
+
+
+// ══════════════════════════════════════
+//  フィールドOCR（Tesseract.js）
+// ══════════════════════════════════════
+let tessWorker = null;
+let tessLang = null;
+let _ocrFieldId = null;
+let _ocrStream = null;
+
+async function getTessWorker(lang) {
+  if (tessWorker && tessLang === lang) return tessWorker;
+  if (tessWorker) { await tessWorker.terminate(); tessWorker = null; }
+  const w = await Tesseract.createWorker();
+  await w.loadLanguage(lang);
+  await w.initialize(lang);
+  // 数字・英字に最適化（送り状番号向け）
+  await w.setParameters({
+    tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-. \u30a0-\u30ff\u3040-\u309f\u4e00-\u9fff\uff01-\uff60\u3000-\u303f',
+    preserve_interword_spaces: '1'
+  });
+  tessWorker = w;
+  tessLang = lang;
+  return w;
+}
+
+async function startFieldOcr(fieldId, lang) {
+  _ocrFieldId = fieldId;
+  const hint = lang === 'eng' ? '送り状番号を枠内に合わせて撮影' : '読み取りたい文字を枠内に合わせて撮影';
+  document.getElementById('ocrCapHint').textContent = hint;
+  document.getElementById('ocrCapture').classList.add('open');
+  try {
+    _ocrStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    document.getElementById('ocrCapVideo').srcObject = _ocrStream;
+  } catch(e) {
+    closeOcrCapture();
+    showToast('カメラ起動失敗: ' + e.message);
+  }
+}
+
+function closeOcrCapture() {
+  if (_ocrStream) { _ocrStream.getTracks().forEach(t => t.stop()); _ocrStream = null; }
+  document.getElementById('ocrCapture').classList.remove('open');
+  document.getElementById('ocrCapVideo').srcObject = null;
+  _ocrFieldId = null;
+}
+
+async function shootOcrCapture() {
+  if (!_ocrFieldId) return;
+  const fieldId = _ocrFieldId;
+  const lang = tessLang || 'eng';
+
+  // 動画からキャプチャ
+  const video = document.getElementById('ocrCapVideo');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+  closeOcrCapture();
+
+  // プログレス表示
+  const prog = document.getElementById('ocrProg_' + fieldId);
+  const btn  = document.getElementById('ocrBtn_' + fieldId);
+  prog.textContent = '読み取り中... (初回はDLあり)';
+  prog.classList.add('visible');
+  btn.classList.add('busy');
+
+  try {
+    // Tesseract CDNを動的ロード
+    if (!window.Tesseract) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+    }
+
+    // 言語はフィールドによって切替
+    const ocrLang = (fieldId === 'recipientName' || fieldId === 'itemName') ? 'jpn+eng' : 'eng';
+    const worker = await getTessWorker(ocrLang);
+    prog.textContent = '解析中...';
+
+    const { data } = await worker.recognize(dataUrl);
+    const text = data.text.trim().replace(/\n+/g, ' ').trim();
+
+    if (text.length > 0) {
+      document.getElementById(fieldId).value = text;
+      showToast('読み取り完了 ✓');
+    } else {
+      showToast('文字を検出できませんでした');
+    }
+  } catch(e) {
+    showToast('OCRエラー: ' + e.message);
+  } finally {
+    prog.classList.remove('visible');
+    btn.classList.remove('busy');
+  }
+}
 
 // ══════════════════════════════════════
 //  フィールド直接スキャン（QuaggaJS）
