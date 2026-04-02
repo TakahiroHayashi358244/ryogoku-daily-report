@@ -156,14 +156,31 @@
     }
     .staff-item.checked { border-color: var(--check-on); }
 
+    .staff-block {
+      border-radius: 10px;
+      transition: background .15s;
+      padding: 4px 0;
+    }
+    .staff-block.drag-over {
+      background: rgba(230, 180, 0, 0.12);
+      border-radius: 10px;
+    }
+    .drag-handle {
+      font-size: 20px;
+      color: #ccc;
+      cursor: grab;
+      padding: 4px 6px;
+      user-select: none;
+      touch-action: none;
+      flex-shrink: 0;
+    }
+    .drag-handle:active { cursor: grabbing; }
     .staff-row {
       display: flex;
       gap: 8px;
       align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0ede8;
+      padding: 8px 0;
     }
-    .staff-row:last-child { border-bottom: none; }
     .staff-row input[type="text"] {
       flex: 1;
       padding: 10px 12px;
@@ -1025,35 +1042,140 @@ function renderStaffList() {
   }
 
   container.innerHTML = staffData.map((s, i) => `
-    <div class="staff-row" id="staff-row-${i}">
-      <input type="text" value="${s.name}" placeholder="氏名"
-             oninput="staffData[${i}].name=this.value" style="grid-column:1;">
-      <button class="staff-delete-btn" onclick="deleteStaffRow(${i})">✕</button>
-    </div>
-    <div class="staff-row-detail">
-      <div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">種別</div>
-        <div class="staff-type-toggle">
-          <button onclick="setStaffType(${i}, false)"
-                  class="${!s.isFixed ? 'active' : ''}">時給</button>
-          <button onclick="setStaffType(${i}, true)"
-                  class="${s.isFixed ? 'active' : ''}">月額固定</button>
+    <div class="staff-block" data-index="${i}" draggable="true">
+      <div class="staff-row">
+        <div class="drag-handle" title="ドラッグして並べ替え">⠿</div>
+        <input type="text" value="${s.name}" placeholder="氏名"
+               oninput="staffData[${i}].name=this.value">
+        <button class="staff-delete-btn" onclick="deleteStaffRow(${i})">✕</button>
+      </div>
+      <div class="staff-row-detail">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">種別</div>
+          <div class="staff-type-toggle">
+            <button onclick="setStaffType(${i}, false)"
+                    class="${!s.isFixed ? 'active' : ''}">時給</button>
+            <button onclick="setStaffType(${i}, true)"
+                    class="${s.isFixed ? 'active' : ''}">月額固定</button>
+          </div>
+        </div>
+        <div>
+          ${s.isFixed
+            ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">月額固定金額（円）</div>
+               <input type="number" value="${s.fixedAmount}" min="0" step="1000"
+                      oninput="staffData[${i}].fixedAmount=Number(this.value)"
+                      style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
+            : `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">時給（円）</div>
+               <input type="number" value="${s.hourlyRate}" min="0" step="50"
+                      oninput="staffData[${i}].hourlyRate=Number(this.value)"
+                      style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
+          }
         </div>
       </div>
-      <div id="staff-rate-${i}">
-        ${s.isFixed
-          ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">月額固定金額（円）</div>
-             <input type="number" value="${s.fixedAmount}" min="0" step="1000"
-                    oninput="staffData[${i}].fixedAmount=Number(this.value)"
-                    style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
-          : `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">時給（円）</div>
-             <input type="number" value="${s.hourlyRate}" min="0" step="50"
-                    oninput="staffData[${i}].hourlyRate=Number(this.value)"
-                    style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale__);">`
-        }
-      </div>
     </div>
-  `).join('<hr style="border:none;border-top:1.5px solid #f0ede8;margin:4px 0;">');
+    <hr style="border:none;border-top:1.5px solid #f0ede8;margin:2px 0;">
+  `).join('');
+
+  initDragAndDrop();
+}
+
+// ドラッグ＆ドロップ（PC・スマホ両対応）
+let dragSrcIndex = null;
+let touchDragEl  = null;
+let touchClone   = null;
+
+function initDragAndDrop() {
+  const blocks = document.querySelectorAll('.staff-block');
+
+  blocks.forEach(block => {
+    const handle = block.querySelector('.drag-handle');
+
+    // --- PC: HTML5 drag ---
+    block.addEventListener('dragstart', e => {
+      dragSrcIndex = Number(block.dataset.index);
+      block.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    block.addEventListener('dragend', () => {
+      block.style.opacity = '';
+      document.querySelectorAll('.staff-block').forEach(b => b.classList.remove('drag-over'));
+    });
+    block.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.staff-block').forEach(b => b.classList.remove('drag-over'));
+      block.classList.add('drag-over');
+    });
+    block.addEventListener('drop', e => {
+      e.preventDefault();
+      const targetIndex = Number(block.dataset.index);
+      if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+        const moved = staffData.splice(dragSrcIndex, 1)[0];
+        staffData.splice(targetIndex, 0, moved);
+        renderStaffList();
+      }
+    });
+
+    // --- スマホ: Touch drag（ハンドル限定）---
+    handle.addEventListener('touchstart', e => {
+      dragSrcIndex = Number(block.dataset.index);
+      touchDragEl  = block;
+
+      // クローンを作成してドラッグ表示
+      touchClone = block.cloneNode(true);
+      const rect = block.getBoundingClientRect();
+      touchClone.style.cssText = `
+        position:fixed; left:${rect.left}px; top:${rect.top}px;
+        width:${rect.width}px; opacity:0.85; z-index:9999;
+        background:var(--surface); border-radius:12px;
+        box-shadow:0 8px 24px rgba(0,0,0,0.18); pointer-events:none;
+        transition:none;
+      `;
+      document.body.appendChild(touchClone);
+      block.style.opacity = '0.3';
+    }, { passive: true });
+
+    handle.addEventListener('touchmove', e => {
+      if (!touchClone) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect  = touchDragEl.getBoundingClientRect();
+      touchClone.style.top  = `${touch.clientY - rect.height / 2}px`;
+      touchClone.style.left = `${rect.left}px`;
+
+      // ホバー先を判定
+      touchClone.style.display = 'none';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchClone.style.display = '';
+      const targetBlock = el?.closest('.staff-block');
+      document.querySelectorAll('.staff-block').forEach(b => b.classList.remove('drag-over'));
+      if (targetBlock && targetBlock !== touchDragEl) targetBlock.classList.add('drag-over');
+    }, { passive: false });
+
+    handle.addEventListener('touchend', e => {
+      if (!touchClone) return;
+      const touch = e.changedTouches[0];
+      touchClone.remove();
+      touchClone = null;
+      if (touchDragEl) touchDragEl.style.opacity = '';
+
+      touchClone = null;
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetBlock = el?.closest('.staff-block');
+      document.querySelectorAll('.staff-block').forEach(b => b.classList.remove('drag-over'));
+
+      if (targetBlock) {
+        const targetIndex = Number(targetBlock.dataset.index);
+        if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+          const moved = staffData.splice(dragSrcIndex, 1)[0];
+          staffData.splice(targetIndex, 0, moved);
+          renderStaffList();
+        }
+      }
+      dragSrcIndex = null;
+      touchDragEl  = null;
+    }, { passive: true });
+  });
 }
 
 function setStaffType(idx, isFixed) {
@@ -1070,10 +1192,14 @@ function deleteStaffRow(idx) {
 function addStaffRow() {
   staffData.push({ name: '', hourlyRate: 1300, isFixed: false, fixedAmount: 0 });
   renderStaffList();
-  // 追加した行の入力欄にフォーカス
+  // 最下段の入力欄にフォーカス＆スクロール
   setTimeout(() => {
     const inputs = document.querySelectorAll('#staff-list-container input[type="text"]');
-    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+    if (inputs.length > 0) {
+      const last = inputs[inputs.length - 1];
+      last.focus();
+      last.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, 100);
 }
 
