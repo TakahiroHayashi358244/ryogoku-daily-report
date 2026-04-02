@@ -48,16 +48,6 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .pf-meta{font-size:0.75rem;color:var(--ink2);font-family:'JetBrains Mono',monospace}
 .pf-actions{display:flex;gap:8px;margin-top:10px}
 .btn-use{flex:1;background:var(--ok);color:#fff;border:none;border-radius:7px;padding:9px;font-weight:700;font-size:0.85rem;cursor:pointer}
-/* フィールドスキャナー */
-.field-scanner{display:none;position:relative;background:#000;border-radius:8px;overflow:hidden;margin-top:8px}
-.field-scanner.visible{display:block}
-.field-scanner video{width:100%;height:200px;display:block;object-fit:cover}
-.field-scanner canvas{display:none !important}
-.field-scanner .scan-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.field-scanner .scan-box{width:88%;height:60px;border:2px solid rgba(255,255,255,0.9);border-radius:6px;position:relative;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)}
-.field-scanner .scan-line{position:absolute;left:4px;right:4px;height:2px;background:var(--accent2);box-shadow:0 0 6px var(--accent2);animation:sl 1.8s ease-in-out infinite}
-.btn-field-scan{background:var(--ink);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:0.8rem;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:background 0.15s}
-.btn-field-scan.active{background:var(--accent)}
 /* OCR */
 .ocr-trigger{display:flex;align-items:center;gap:12px;padding:13px 14px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none;margin-bottom:12px}
 .ocr-trigger:hover{opacity:0.88}
@@ -68,14 +58,6 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:8px;vertical-align:middle}
 .scan-btn{display:inline-block;background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2);border-radius:6px;padding:6px 10px;font-size:0.72rem;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all 0.15s;user-select:none;-webkit-user-select:none}
 .scan-btn:hover,.scan-btn:active{background:var(--ok);border-color:var(--ok);color:#fff}
-.scan-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px}
-.input-scan-row{display:flex;gap:6px;align-items:center}
-.input-scan-row>input,.input-scan-row>.mono{flex:1;min-width:0}
-.tess-progress-wrap{display:none;margin-bottom:10px;background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:10px 14px}
-.tess-progress-wrap.visible{display:block}
-.tess-progress-label{font-size:0.75rem;color:var(--ok);font-weight:700;margin-bottom:6px}
-.tess-bar-bg{background:#ddd;border-radius:4px;height:6px;overflow:hidden}
-.tess-bar{background:var(--ok);height:6px;width:0%;transition:width 0.2s;border-radius:4px}
 .ocr-preview-wrap{display:none;margin-bottom:10px;position:relative}
 .ocr-preview-wrap.visible{display:block}
 #ocrPreview{width:100%;border-radius:8px;display:block;max-height:200px;object-fit:contain;background:#000}
@@ -235,42 +217,15 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>旧送り状番号<span class="req">*</span></label>
-      <div class="input-scan-row">
-        <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
-        <button class="btn-field-scan" id="fsBtn_oldTrackingNo" onclick="toggleFieldScan('oldTrackingNo')">📷</button>
-        <button class="btn-field-ocr" id="ocrBtn_oldTrackingNo" onclick="startFieldOcr('oldTrackingNo','eng')">🔤</button>
-      </div>
-      <div class="ocr-prog" id="ocrProg_oldTrackingNo">読み取り中...</div>
-      <div class="field-scanner" id="fs_oldTrackingNo">
-        <div id="fs_interactive_oldTrackingNo"></div>
-        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
-      </div>/div>
+      <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
     </div>
     <div class="form-row">
       <label>返送時の送り状番号<span class="opt">任意</span></label>
-      <div class="input-scan-row">
-        <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
-        <button class="btn-field-scan" id="fsBtn_returnTrackingNo" onclick="toggleFieldScan('returnTrackingNo')">📷</button>
-        <button class="btn-field-ocr" id="ocrBtn_returnTrackingNo" onclick="startFieldOcr('returnTrackingNo','eng')">🔤</button>
-      </div>
-      <div class="ocr-prog" id="ocrProg_returnTrackingNo">読み取り中...</div>
-      <div class="field-scanner" id="fs_returnTrackingNo">
-        <div id="fs_interactive_returnTrackingNo"></div>
-        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
-      </div>/div>
+      <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
-      <div class="input-scan-row">
-        <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
-        <button class="btn-field-scan" id="fsBtn_recipientName" onclick="toggleFieldScan('recipientName')">📷</button>
-        <button class="btn-field-ocr" id="ocrBtn_recipientName" onclick="startFieldOcr('recipientName','jpn+eng')">🔤</button>
-      </div>
-      <div class="ocr-prog" id="ocrProg_recipientName">読み取り中...</div>
-      <div class="field-scanner" id="fs_recipientName">
-        <div id="fs_interactive_recipientName"></div>
-        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
-      </div>/div>
+      <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
     </div>
     <div class="form-row">
       <label>受取人住所<span class="opt">任意</span></label>
@@ -278,16 +233,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>商品名・荷姿<span class="req">*</span></label>
-      <div class="input-scan-row">
-        <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
-        <button class="btn-field-scan" id="fsBtn_itemName" onclick="toggleFieldScan('itemName')">📷</button>
-        <button class="btn-field-ocr" id="ocrBtn_itemName" onclick="startFieldOcr('itemName','jpn+eng')">🔤</button>
-      </div>
-      <div class="ocr-prog" id="ocrProg_itemName">読み取り中...</div>
-      <div class="field-scanner" id="fs_itemName">
-        <div id="fs_interactive_itemName"></div>
-        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
-      </div>/div>
+      <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
     </div>
     <div class="form-row">
       <label>返送理由<span class="opt">任意</span></label>
@@ -474,15 +420,6 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
   </div>
 </div>
-
-<!-- OCR カメラキャプチャ -->
-<div class="ocr-capture" id="ocrCapture">
-  <video id="ocrCapVideo" autoplay playsinline muted></video>
-  <div class="ocr-cap-bar">
-    <span class="ocr-cap-hint" id="ocrCapHint">シャッターを押して撮影</span>
-    <button class="ocr-cap-close" onclick="closeOcrCapture()">キャンセル</button>
-    <button class="ocr-cap-btn" onclick="shootOcrCapture()">📸 撮影</button>
-  </div>
 </div>
 <div id="toast"></div>
 
@@ -491,11 +428,11 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 //  CONST & STATE
 // ══════════════════════════════════════
 const GAS_DEFAULT='https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
-let CFG={yahooId:localStorage.getItem('wh_yahoo_id')||'',gasUrl:localStorage.getItem('wh_gas_url')||'',deadlineDays:parseInt(localStorage.getItem('wh_deadline_days')||'0')};
+let CFG={yahooId:localStorage.getItem('wh_yahoo_id')||'',gasUrl:localStorage.getItem('wh_gas_url')||'',deadlineDays:parseInt(localStorage.getItem('wh_deadline_days'))||14};
 let history=JSON.parse(localStorage.getItem('wh_history')||'[]');
-let scanning=false,lastCode=null,currentProduct=null,locPending=false;
-let editIdx=null,locIdx=null,retIdx=null;
-let selectedReason='';
+let currentProduct=null;
+let scanning=false;
+let lastCode=null;
 window._ocrTokens=[];
 
 // ══════════════════════════════════════
@@ -508,7 +445,6 @@ window.onload=()=>{
   if(CFG.gasUrl)  document.getElementById('gasUrl').value=CFG.gasUrl;
   if(CFG.deadlineDays) document.getElementById('deadlineDays').value=CFG.deadlineDays;
   if(!CFG.gasUrl) document.getElementById('configPanel').classList.add('open');
-  // ロゴ埋め込み（base64はビルド時に置換）
   renderHistory();
 };
 function updateTime(){const n=new Date();document.getElementById('arrivalTime').value=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
@@ -520,48 +456,46 @@ function toggleConfig(){document.getElementById('configPanel').classList.toggle(
 function saveConfig(){
   CFG.yahooId=document.getElementById('yahooId').value.trim();
   CFG.gasUrl=document.getElementById('gasUrl').value.trim();
-  CFG.deadlineDays=parseInt(document.getElementById('deadlineDays').value)||0;
+  CFG.deadlineDays=parseInt(document.getElementById('deadlineDays').value)||14;
   localStorage.setItem('wh_yahoo_id',CFG.yahooId);
   localStorage.setItem('wh_gas_url',CFG.gasUrl);
   localStorage.setItem('wh_deadline_days',CFG.deadlineDays);
+  showToast('設定を保存しました ✓');
   document.getElementById('configPanel').classList.remove('open');
-  showToast('設定を保存しました');
-  renderHistory();
 }
 
 // ══════════════════════════════════════
-//  JAN PANEL TOGGLE
-// ══════════════════════════════════════
-// ══════════════════════════════════════
-//  RETURN REASON
+//  REASON CHIPS
 // ══════════════════════════════════════
 function toggleReason(el,val){
-  document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
-  if(selectedReason===val){selectedReason='';document.getElementById('reasonOther').classList.remove('visible');return;}
+  const others=document.querySelectorAll('.reason-chip');
+  others.forEach(c=>c.classList.remove('selected'));
   el.classList.add('selected');
-  selectedReason=val;
-  if(val==='自由入力'){document.getElementById('reasonOther').classList.add('visible');}
-  else{document.getElementById('reasonOther').classList.remove('visible');}
+  const other=document.getElementById('reasonOther');
+  const otherText=document.getElementById('reasonOtherText');
+  if(val==='自由入力'){other.classList.add('visible');otherText.focus();}
+  else{other.classList.remove('visible');otherText.value='';}
 }
 function getReasonValue(){
-  if(!selectedReason)return'';
-  if(selectedReason==='自由入力')return document.getElementById('reasonOtherText').value.trim();
-  return selectedReason;
+  const sel=document.querySelector('.reason-chip.selected');
+  if(!sel)return'';
+  if(sel.textContent.includes('自由入力'))return document.getElementById('reasonOtherText').value.trim();
+  return sel.dataset.val||sel.textContent.trim();
 }
 
 // ══════════════════════════════════════
-//  CAMERA (JAN)
+//  JAN SCANNER (QuaggaJS)
 // ══════════════════════════════════════
 function toggleCamera(){scanning?stopCamera():startCamera();}
 function startCamera(){
   document.getElementById('scanner-container').classList.add('visible');
   const btn=document.getElementById('camBtn');btn.classList.add('active');btn.textContent='⏹';
-  Quagga.init({inputStream:{name:'Live',type:'LiveStream',target:document.getElementById('interactive'),constraints:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},decoder:{readers:['ean_reader','ean_8_reader','code_128_reader']},locate:true,numOfWorkers:2,frequency:10},err=>{
+  Quagga.init({inputStream:{name:'Live',type:'LiveStream',target:document.getElementById('interactive'),constraints:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader','i2of5_reader']}},function(err){
     if(err){setStatus('カメラ起動失敗','err');return;}
     document.querySelectorAll('#interactive canvas').forEach(c=>c.style.cssText='display:none!important');
     Quagga.start();scanning=true;
   });
-  Quagga.onDetected(data=>{const code=data.codeResult.code;if(code===lastCode)return;lastCode=code;document.getElementById('janInput').value=code;stopCamera();searchProduct();});
+  Quagga.onDetected(function(data){const code=data.codeResult.code;if(code===lastCode)return;lastCode=code;document.getElementById('janInput').value=code;stopCamera();searchProduct();});
 }
 function stopCamera(){
   if(scanning){Quagga.stop();scanning=false;}
@@ -588,7 +522,7 @@ async function searchProduct(){
     const item=data.hits[0];
     currentProduct={code,name:item.name,brand:item.brand?.name||item.seller?.name||'',price:item.price||null};
     document.getElementById('pfName').textContent=item.name;
-    document.getElementById('pfMeta').textContent=`JAN: ${code}${currentProduct.brand?' / '+currentProduct.brand:''}${currentProduct.price?' ¥'+currentProduct.price.toLocaleString():''}`;
+    document.getElementById('pfMeta').textContent=`JAN: ${code}${currentProduct.brand?' / '+currentProduct.brand:''}${currentProduct.price?' / ¥'+currentProduct.price.toLocaleString():''}`;
     document.getElementById('productFound').classList.add('visible');
     setStatus('商品情報を取得しました ✓','ok');
   }catch(e){setStatus('取得エラー: '+e.message,'err');}
@@ -596,18 +530,104 @@ async function searchProduct(){
 function useProduct(){
   if(!currentProduct)return;
   document.getElementById('itemName').value=currentProduct.name;
-  document.getElementById('productFound').classList.remove('visible');
-  setStatus('✓ 商品名・荷姿に反映しました','ok');
+  showToast('商品名に反映しました ✓');
 }
 
 // ══════════════════════════════════════
-//  QTY / LOCATION
+//  OCR (AI / Claude)
 // ══════════════════════════════════════
-function changeQty(d){const el=document.getElementById('qtyInput');el.value=Math.max(1,(parseInt(el.value)||1)+d);}
+function triggerAiOcr(){document.getElementById('ocrFileInputAi').click();}
+async function handleAiOcr(e){
+  const file=e.target.files[0];if(!file)return;
+  e.target.value='';
+  resetOcr();
+  const resized=await resizeImage(file,1600);
+  const base64Data=resized.split(',')[1];
+  document.getElementById('ocrPreview').src=resized;
+  document.getElementById('ocrPreviewWrap').classList.add('visible');
+  document.getElementById('ocrErr').classList.remove('visible');
+  document.getElementById('ocrOverlay').classList.add('visible');
+  try{
+    const tokens=await callClaudeOcrTokens(base64Data);
+    document.getElementById('ocrOverlay').classList.remove('visible');
+    showOcrTokens(tokens,'🤖 AI解析結果');
+  }catch(err){
+    document.getElementById('ocrOverlay').classList.remove('visible');
+    const el=document.getElementById('ocrErr');el.textContent='AI解析エラー: '+err.message;el.classList.add('visible');
+  }
+}
+function resizeImage(file,maxWidth){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const scale=Math.min(1,maxWidth/img.width);
+        const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.85));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+async function callClaudeOcrTokens(base64Data){
+  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
+  const prompt='この画像（日本の宅配便の送り状）に含まれる全てのテキストを読み取ってください。\n以下の項目が特に重要です: 送り状番号・氏名・会社名・住所・品名・数量\n必ずJSON形式のみで返してください。\n\n{"items":["テキスト1","テキスト2","テキスト3",...]}\n\nルール:\n- 意味のある単位（番号・氏名・住所・品名など）で分割\n- 数字列は1つの番号として扱う（複数あれば別々に）\n- 空白や記号のみは除外\n- 類似の重複は1つにまとめる\n- 20件以内';
+  const res=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mode:'ocr',image:base64Data,mimeType:'image/jpeg',prompt})});
+  if(!res.ok)throw new Error('GAS error: '+res.status);
+  const d=await res.json();
+  if(d.error)throw new Error(d.error);
+  if(!d.text)throw new Error('レスポンスが空です');
+  const parsed=JSON.parse(d.text.replace(/```json|```/g,'').trim());
+  return parsed.items||[];
+}
+function showOcrTokens(tokens,title){
+  const list=document.getElementById('ocrTokensList');
+  document.getElementById('ocrTokensBox').querySelector('.ocr-tokens-title').textContent=title||'読み取り結果';
+  if(!tokens.length){
+    list.innerHTML='<div style="font-size:0.8rem;color:var(--ink2);text-align:center;padding:10px">テキストが検出されませんでした</div>';
+  }else{
+    list.innerHTML=tokens.map((text,i)=>`
+      <div class="ocr-token-row">
+        <div class="ocr-token-text">${esc(text)}</div>
+        <div class="ocr-token-btns">
+          <button class="ocr-token-btn t-old"  onclick="applyToken(${i},'old')">旧送状番号</button>
+          <button class="ocr-token-btn t-new"  onclick="applyToken(${i},'new')">返送番号</button>
+          <button class="ocr-token-btn t-recv" onclick="applyToken(${i},'recv')">受取人名</button>
+          <button class="ocr-token-btn t-item" onclick="applyToken(${i},'item')">商品名</button>
+        </div>
+      </div>`).join('');
+  }
+  window._ocrTokens=tokens;
+  document.getElementById('ocrTokensBox').classList.add('visible');
+}
+function applyToken(idx,field){
+  const text=(window._ocrTokens||[])[idx]||'';
+  const map={old:'oldTrackingNo',new:'returnTrackingNo',recv:'recipientName',item:'itemName'};
+  if(map[field]){document.getElementById(map[field]).value=text;showToast('反映しました ✓');}
+}
+function resetOcr(){
+  ['ocrPreviewWrap','ocrTokensBox','ocrErr','ocrOverlay'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  document.getElementById('ocrPreview').src='';window._ocrTokens=[];
+}
+
+// ══════════════════════════════════════
+//  QUANTITY
+// ══════════════════════════════════════
+function changeQty(d){
+  const el=document.getElementById('qtyInput');
+  const v=Math.max(1,parseInt(el.value||1)+d);
+  el.value=v;
+}
+
+// ══════════════════════════════════════
+//  LOCATION
+// ══════════════════════════════════════
 function setPending(){
-  locPending=true;
-  const el=document.getElementById('locationInput');
-  el.value='';el.placeholder='後で追加';el.style.borderColor='var(--warn)';
+  document.getElementById('locationInput').value='';
   document.getElementById('locPendingNote').style.display='block';
 }
 
@@ -620,468 +640,198 @@ function submitEntry(){
   const oldTracking=document.getElementById('oldTrackingNo').value.trim();
   const returnTracking=document.getElementById('returnTrackingNo').value.trim();
   const recipient=document.getElementById('recipientName').value.trim();
-  const recipientAddr=document.getElementById('recipientAddress').value.trim();
+  const recipientAddress=document.getElementById('recipientAddress').value.trim();
   const itemName=document.getElementById('itemName').value.trim();
   const reason=getReasonValue();
   const qty=parseInt(document.getElementById('qtyInput').value)||1;
-  const loc=document.getElementById('locationInput').value.trim();
+  const location=document.getElementById('locationInput').value.trim();
+  const locPending=document.getElementById('locPendingNote').style.display!=='none';
   if(!date){shake('arrivalDate');showToast('到着日を入力してください');return;}
   if(!oldTracking){shake('oldTrackingNo');showToast('旧送り状番号を入力してください');return;}
   if(!recipient){shake('recipientName');showToast('受取人氏名を入力してください');return;}
   if(!itemName){shake('itemName');showToast('商品名・荷姿を入力してください');return;}
   const entry={
-    id:Date.now(),date,time,
-    oldTracking,returnTracking,
-    recipient,recipientAddress:recipientAddr,
-    itemName,reason,qty,
-    location:loc||null,locPending:!loc,
-    returned:false,returnedDate:null,returnNote:null,
-    registeredAt:new Date().toLocaleString('ja-JP')
+    registeredAt:new Date().toISOString(),
+    date,time,oldTracking,returnTracking,
+    recipient,recipientAddress,itemName,reason,qty,
+    location,locPending,
+    returned:false,returnedDate:'',returnNote:'',
+    id:Date.now()
   };
-  history.unshift(entry);save();renderHistory();
-  showToast('入荷登録しました ✓');
+  history.unshift(entry);
+  save();
   sendToGas(entry);
+  renderHistory();
   resetForm();
+  showToast('登録しました ✓');
 }
-function sendToGas(entry){
-  fetch(CFG.gasUrl||GAS_DEFAULT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(entry)}).catch(console.error);
+async function sendToGas(entry){
+  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
+  try{
+    await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+      mode:'register',
+      registeredAt:entry.registeredAt,
+      date:entry.date,time:entry.time,
+      oldTracking:entry.oldTracking,returnTracking:entry.returnTracking,
+      recipient:entry.recipient,recipientAddress:entry.recipientAddress,
+      itemName:entry.itemName,reason:entry.reason,qty:entry.qty,
+      location:entry.location,locPending:entry.locPending,
+      returned:false,returnedDate:'',returnNote:''
+    })});
+  }catch(e){console.warn('GAS send error:',e);}
 }
-
-// ══════════════════════════════════════
-//  RESET
-// ══════════════════════════════════════
 function resetForm(){
-  ['oldTrackingNo','returnTrackingNo','recipientName','recipientAddress','itemName'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('qtyInput').value='1';
-  const loc=document.getElementById('locationInput');
-  loc.value='';loc.placeholder='例: A-01-03';loc.style.borderColor='';
-  document.getElementById('locPendingNote').style.display='none';
-  locPending=false;
+  ['oldTrackingNo','returnTrackingNo','recipientName','recipientAddress','itemName','reasonOtherText'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
   document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
-  selectedReason='';
   document.getElementById('reasonOther').classList.remove('visible');
-  document.getElementById('reasonOtherText').value='';
-  currentProduct=null;
-  document.getElementById('productFound').classList.remove('visible');
+  document.getElementById('qtyInput').value=1;
+  document.getElementById('locationInput').value='';
+  document.getElementById('locPendingNote').style.display='none';
   document.getElementById('janInput').value='';
-  resetOcr();setStatus('');updateTime();
+  document.getElementById('productFound').classList.remove('visible');
+  setStatus('');
+  resetOcr();
+  updateTime();
 }
 
 // ══════════════════════════════════════
-//  HISTORY
+//  HISTORY & STORAGE
 // ══════════════════════════════════════
 function save(){localStorage.setItem('wh_history',JSON.stringify(history));}
 function renderHistory(){
-  const el=document.getElementById('historyList');
-  const q=(document.getElementById('searchInput').value||'').trim().toLowerCase();
-  let list=q?history.filter(i=>
-    (i.oldTracking||'').toLowerCase().includes(q)||
-    (i.returnTracking||'').toLowerCase().includes(q)||
-    (i.recipient||'').toLowerCase().includes(q)||
-    (i.itemName||'').toLowerCase().includes(q)
-  ):history;
-  if(!list.length){el.innerHTML=`<div class="empty-hist">${q?'検索結果なし':'登録データがありません'}</div>`;return;}
-  const today=new Date();today.setHours(0,0,0,0);
-  el.innerHTML=list.map(item=>{
-    const idx=history.indexOf(item);
-    const locB=item.locPending?`<span class="h-loc pending">未定</span>`:item.location?`<span class="h-loc">${esc(item.location)}</span>`:'';
-    const retB=item.returned?`<span class="h-badge-ret">返送済</span>`:`<span class="h-badge-unret">未返送</span>`;
-    let alertClass='',deadlineBadge='';
-    if(CFG.deadlineDays>0&&!item.returned&&item.date){
-      const arr=new Date(item.date);arr.setHours(0,0,0,0);
-      const dl=new Date(arr);dl.setDate(dl.getDate()+CFG.deadlineDays);
-      const diff=Math.ceil((dl-today)/86400000);
-      if(diff<0){alertClass='alert-over';deadlineBadge=`<span class="h-deadline over">期限超過${Math.abs(diff)}日</span>`;}
-      else if(diff<=3){alertClass='alert-soon';deadlineBadge=`<span class="h-deadline soon">期限まで${diff}日</span>`;}
-      else{deadlineBadge=`<span class="h-deadline ok">${diff}日後</span>`;}
-    }
-    return`<div class="h-item${item.returned?' returned':''} ${alertClass}">
-      <div class="h-row1">
-        <div class="h-name">${retB}${esc(item.itemName)}${deadlineBadge}</div>
-        <div class="h-date">${item.date}</div>
-      </div>
-      <div class="h-meta">
-        ${locB}旧送状: ${esc(item.oldTracking)}${item.returnTracking?' / 返送: '+esc(item.returnTracking):''}
-        ${item.recipient?' / '+esc(item.recipient):''}
-        ${item.reason?' / '+esc(item.reason):''}
-        ×${item.qty}
-        ${item.returned&&item.returnedDate?' / 返送日:'+item.returnedDate:''}
-      </div>
-      <div class="h-actions">
-        <button class="h-btn h-btn-edit" onclick="openEditModal(${idx})">✏ 編集</button>
-        ${item.locPending?`<button class="h-btn h-btn-loc" onclick="openLocModal(${idx})">📍 ロケ追加</button>`:''}
-        ${item.returned?`<button class="h-btn h-btn-unreturn" onclick="toggleReturn(${idx})">↩ 返送取消</button>`:`<button class="h-btn h-btn-return" onclick="openReturnModal(${idx})">📦 未返送</button>`}
-      </div>
-    </div>`;
+  const tbody=document.getElementById('historyBody');
+  if(!tbody)return;
+  if(!history.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink2)">登録データなし</td></tr>';
+    return;
+  }
+  tbody.innerHTML=history.map((item,i)=>{
+    const deadline=item.date?new Date(new Date(item.date).getTime()+CFG.deadlineDays*86400000):null;
+    const today=new Date();today.setHours(0,0,0,0);
+    const isOverdue=deadline&&!item.returned&&deadline<today;
+    const daysLeft=deadline?Math.ceil((deadline-today)/86400000):null;
+    const urgency=isOverdue?'⚠ 期限超過':(daysLeft<=3&&!item.returned)?`残${daysLeft}日`:'';
+    return `<tr class="${isOverdue?'row-overdue':''}" onclick="openEditModal(${i})">
+      <td>${item.date||''}</td>
+      <td class="mono" style="font-size:0.75rem">${esc(item.oldTracking)}</td>
+      <td>${esc(item.recipient)}</td>
+      <td style="font-size:0.8rem">${esc(item.itemName)}</td>
+      <td>${item.qty}</td>
+      <td>${item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>'}</td>
+      <td><span class="${item.returned?'badge-returned':'badge-unreturned'}" onclick="event.stopPropagation();toggleReturn(${i})">${item.returned?'返送済':'📦 未返送'}</span></td>
+      <td style="color:var(--accent);font-size:0.75rem;font-weight:700">${urgency}</td>
+    </tr>`;
   }).join('');
 }
 
-// EDIT
-function openEditModal(idx){
-  editIdx=idx;const i=history[idx];
-  document.getElementById('editModalMeta').textContent=`登録: ${i.registeredAt}`;
-  document.getElementById('em-date').value=i.date||'';
-  document.getElementById('em-oldTracking').value=i.oldTracking||'';
-  document.getElementById('em-returnTracking').value=i.returnTracking||'';
-  document.getElementById('em-recipient').value=i.recipient||'';
-  document.getElementById('em-address').value=i.recipientAddress||'';
-  document.getElementById('em-item').value=i.itemName||'';
-  document.getElementById('em-reason').value=i.reason||'';
-  document.getElementById('em-qty').value=i.qty||1;
-  document.getElementById('em-loc').value=i.location||'';
+// ══════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════
+function openEditModal(i){
+  const item=history[i];if(!item)return;
+  document.getElementById('editIndex').value=i;
+  document.getElementById('editOldTracking').value=item.oldTracking||'';
+  document.getElementById('editReturnTracking').value=item.returnTracking||'';
+  document.getElementById('editRecipient').value=item.recipient||'';
+  document.getElementById('editItemName').value=item.itemName||'';
+  document.getElementById('editReason').value=item.reason||'';
+  document.getElementById('editQty').value=item.qty||1;
   document.getElementById('editModal').classList.add('open');
 }
 function saveEdit(){
-  const i=history[editIdx];
-  i.date=document.getElementById('em-date').value;
-  i.oldTracking=document.getElementById('em-oldTracking').value.trim();
-  i.returnTracking=document.getElementById('em-returnTracking').value.trim();
-  i.recipient=document.getElementById('em-recipient').value.trim();
-  i.recipientAddress=document.getElementById('em-address').value.trim();
-  i.itemName=document.getElementById('em-item').value.trim();
-  i.reason=document.getElementById('em-reason').value.trim();
-  i.qty=parseInt(document.getElementById('em-qty').value)||1;
-  const loc=document.getElementById('em-loc').value.trim();
-  i.location=loc||null;i.locPending=!loc;
-  save();renderHistory();closeModal('editModal');
-  syncToGas(i);showToast('編集を保存しました');
+  const i=parseInt(document.getElementById('editIndex').value);
+  if(isNaN(i)||!history[i])return;
+  history[i].oldTracking=document.getElementById('editOldTracking').value.trim();
+  history[i].returnTracking=document.getElementById('editReturnTracking').value.trim();
+  history[i].recipient=document.getElementById('editRecipient').value.trim();
+  history[i].itemName=document.getElementById('editItemName').value.trim();
+  history[i].reason=document.getElementById('editReason').value.trim();
+  history[i].qty=parseInt(document.getElementById('editQty').value)||1;
+  save();renderHistory();closeModal('editModal');showToast('更新しました ✓');
 }
-
-// LOC
-function openLocModal(idx){
-  locIdx=idx;const i=history[idx];
-  document.getElementById('locModalMeta').textContent=`${i.itemName} / 旧送状: ${i.oldTracking}`;
-  document.getElementById('locModalInput').value='';
+function openLocModal(i){
+  const item=history[i];if(!item)return;
+  document.getElementById('locIndex').value=i;
+  document.getElementById('locInput2').value=item.location||'';
   document.getElementById('locModal').classList.add('open');
-  setTimeout(()=>document.getElementById('locModalInput').focus(),100);
 }
 function saveLocation(){
-  const loc=document.getElementById('locModalInput').value.trim();
-  if(!loc){showToast('ロケーション番号を入力してください');return;}
-  history[locIdx].location=loc;history[locIdx].locPending=false;
-  save();renderHistory();closeModal('locModal');
-  syncToGas(history[locIdx]);showToast('ロケーションを登録しました');
+  const i=parseInt(document.getElementById('locIndex').value);
+  if(isNaN(i)||!history[i])return;
+  history[i].location=document.getElementById('locInput2').value.trim();
+  history[i].locPending=false;
+  save();renderHistory();closeModal('locModal');showToast('ロケーション更新 ✓');
 }
-
-// RETURN
-function openReturnModal(idx){
-  retIdx=idx;const i=history[idx];
-  document.getElementById('returnModalMeta').textContent=`${i.itemName} / 旧送状: ${i.oldTracking}`;
-  document.getElementById('rm-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('rm-note').value='';
+function openReturnModal(i){
+  const item=history[i];if(!item)return;
+  document.getElementById('returnIndex').value=i;
+  document.getElementById('returnDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('returnNote').value=item.returnNote||'';
   document.getElementById('returnModal').classList.add('open');
 }
 function saveReturn(){
-  history[retIdx].returned=true;
-  history[retIdx].returnedDate=document.getElementById('rm-date').value;
-  history[retIdx].returnNote=document.getElementById('rm-note').value.trim();
-  save();renderHistory();closeModal('returnModal');
-  syncToGas(history[retIdx]);showToast('返送済みにしました');
+  const i=parseInt(document.getElementById('returnIndex').value);
+  if(isNaN(i)||!history[i])return;
+  history[i].returned=true;
+  history[i].returnedDate=document.getElementById('returnDate').value;
+  history[i].returnNote=document.getElementById('returnNote').value.trim();
+  save();renderHistory();closeModal('returnModal');showToast('返送済みに更新 ✓');
 }
-function toggleReturn(idx){
-  history[idx].returned=false;history[idx].returnedDate=null;history[idx].returnNote=null;
-  save();renderHistory();syncToGas(history[idx]);showToast('返送フラグを解除しました');
+function toggleReturn(i){
+  if(!history[i])return;
+  if(history[i].returned){
+    history[i].returned=false;history[i].returnedDate='';history[i].returnNote='';
+    save();renderHistory();showToast('未返送に戻しました');
+  }else{
+    openReturnModal(i);
+  }
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-// GAS同期
-function syncToGas(entry){
-  fetch(CFG.gasUrl||GAS_DEFAULT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({...entry,mode:'update'})}).catch(console.error);
+// ══════════════════════════════════════
+//  SYNC
+// ══════════════════════════════════════
+function syncToGas(){
+  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
+  if(!gasUrl){showToast('GAS URLを設定してください');return;}
+  showToast('同期中...');
+  Promise.all(history.map(e=>sendToGas(e)))
+    .then(()=>showToast('同期完了 ✓'))
+    .catch(()=>showToast('同期エラー'));
 }
-
-// SYNC FROM GAS
 function openSyncModal(){document.getElementById('syncModal').classList.add('open');}
 async function syncFromGas(){
-  const filter=document.getElementById('syncFilter').value;
-  closeModal('syncModal');
-  const btn=document.getElementById('syncBtn');
-  const statusEl=document.getElementById('syncStatus');
-  btn.textContent='読込中...';btn.disabled=true;
-  statusEl.style.display='flex';statusEl.style.color='var(--accent2)';
-  statusEl.innerHTML='<span class="spinner-sm"></span>スプレッドシートから読み込み中...';
+  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
+  if(!gasUrl){showToast('GAS URLを設定してください');return;}
+  document.getElementById('syncModal').classList.remove('open');
+  showToast('シートから読み込み中...');
   try{
-    const res=await fetch(`${CFG.gasUrl||GAS_DEFAULT}?mode=getAll`);
+    const res=await fetch(`${gasUrl}?mode=getAll`);
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
-    if(data.error)throw new Error(data.error);
-    if(!data.rows||!data.rows.length){statusEl.innerHTML='データがありません';return;}
-    let imported=data.rows.map(r=>({
-      id:Date.now()+Math.random(),
-      registeredAt:r['登録日時']||'',date:r['到着日']||'',time:r['時刻']||'',
-      oldTracking:r['旧送り状番号']||'',returnTracking:r['返送送り状番号']||'',
-      recipient:r['受取人氏名']||'',recipientAddress:r['受取人住所']||'',
-      itemName:r['商品名・荷姿']||'',reason:r['返送理由']||'',
-      qty:parseInt(r['数量'])||1,
-      location:r['ロケーション']||null,locPending:r['ロケーション状態']==='未定',
-      returned:r['返送済み']==='返送済',returnedDate:r['返送日']||null,returnNote:r['返送備考']||null
+    if(!data.rows||!data.rows.length){showToast('データなし');return;}
+    history=data.rows.map(r=>({
+      registeredAt:r[0]||'',date:r[1]||'',time:r[2]||'',
+      oldTracking:r[3]||'',returnTracking:r[4]||'',
+      recipient:r[5]||'',recipientAddress:r[6]||'',
+      itemName:r[7]||'',reason:r[8]||'',qty:parseInt(r[9])||1,
+      location:r[10]||'',locPending:r[11]==='未定',
+      returned:r[12]==='返送済',returnedDate:r[13]||'',returnNote:r[14]||'',
+      id:Date.now()+Math.random()
     }));
-    if(filter==='unreturned')imported=imported.filter(i=>!i.returned);
-    if(filter==='returned')imported=imported.filter(i=>i.returned);
-    imported.sort((a,b)=>a.date>b.date?-1:a.date<b.date?1:0);
-    history=imported;save();
-    document.getElementById('searchInput').value='';
+    save();
+    // 検索をクリア
+    const si=document.getElementById('searchInput');if(si)si.value='';
     renderHistory();
-    const lbl=filter==='unreturned'?'未返送':filter==='returned'?'返送済み':'全件';
-    statusEl.innerHTML=`✓ ${lbl} ${imported.length}件を読み込みました`;
-    statusEl.style.color='var(--ok)';
-    setTimeout(()=>{statusEl.style.display='none';},3000);
-  }catch(e){statusEl.innerHTML='読み込みエラー: '+e.message;statusEl.style.color='var(--accent)';}
-  finally{btn.textContent='↓ シート読込';btn.disabled=false;}
-}
-
-
-
-// ══════════════════════════════════════
-//  フィールドOCR（Tesseract.js）
-// ══════════════════════════════════════
-let tessWorker = null;
-let tessLang = null;
-let _ocrFieldId = null;
-let _ocrStream = null;
-
-async function getTessWorker(lang) {
-  if (tessWorker && tessLang === lang) return tessWorker;
-  if (tessWorker) { await tessWorker.terminate(); tessWorker = null; }
-  const w = await Tesseract.createWorker();
-  await w.loadLanguage(lang);
-  await w.initialize(lang);
-  // 数字・英字に最適化（送り状番号向け）
-  await w.setParameters({
-    tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-. \u30a0-\u30ff\u3040-\u309f\u4e00-\u9fff\uff01-\uff60\u3000-\u303f',
-    preserve_interword_spaces: '1'
-  });
-  tessWorker = w;
-  tessLang = lang;
-  return w;
-}
-
-async function startFieldOcr(fieldId, lang) {
-  _ocrFieldId = fieldId;
-  const hint = lang === 'eng' ? '送り状番号を枠内に合わせて撮影' : '読み取りたい文字を枠内に合わせて撮影';
-  document.getElementById('ocrCapHint').textContent = hint;
-  document.getElementById('ocrCapture').classList.add('open');
-  try {
-    _ocrStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    document.getElementById('ocrCapVideo').srcObject = _ocrStream;
-  } catch(e) {
-    closeOcrCapture();
-    showToast('カメラ起動失敗: ' + e.message);
-  }
-}
-
-function closeOcrCapture() {
-  if (_ocrStream) { _ocrStream.getTracks().forEach(t => t.stop()); _ocrStream = null; }
-  document.getElementById('ocrCapture').classList.remove('open');
-  document.getElementById('ocrCapVideo').srcObject = null;
-  _ocrFieldId = null;
-}
-
-async function shootOcrCapture() {
-  if (!_ocrFieldId) return;
-  const fieldId = _ocrFieldId;
-  const lang = tessLang || 'eng';
-
-  // 動画からキャプチャ
-  const video = document.getElementById('ocrCapVideo');
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-
-  closeOcrCapture();
-
-  // プログレス表示
-  const prog = document.getElementById('ocrProg_' + fieldId);
-  const btn  = document.getElementById('ocrBtn_' + fieldId);
-  prog.textContent = '読み取り中... (初回はDLあり)';
-  prog.classList.add('visible');
-  btn.classList.add('busy');
-
-  try {
-    // Tesseract CDNを動的ロード
-    if (!window.Tesseract) {
-      await new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
-    }
-
-    // 言語はフィールドによって切替
-    const ocrLang = (fieldId === 'recipientName' || fieldId === 'itemName') ? 'jpn+eng' : 'eng';
-    const worker = await getTessWorker(ocrLang);
-    prog.textContent = '解析中...';
-
-    const { data } = await worker.recognize(dataUrl);
-    const text = data.text.trim().replace(/\n+/g, ' ').trim();
-
-    if (text.length > 0) {
-      document.getElementById(fieldId).value = text;
-      showToast('読み取り完了 ✓');
-    } else {
-      showToast('文字を検出できませんでした');
-    }
-  } catch(e) {
-    showToast('OCRエラー: ' + e.message);
-  } finally {
-    prog.classList.remove('visible');
-    btn.classList.remove('busy');
-  }
+    showToast(`${history.length}件読み込みました ✓`);
+  }catch(e){showToast('読み込みエラー: '+e.message);}
 }
 
 // ══════════════════════════════════════
-//  フィールド直接スキャン（QuaggaJS）
+//  CSV
 // ══════════════════════════════════════
-let fsActive = null;
-
-function toggleFieldScan(fieldId) {
-  if (fsActive === fieldId) { stopFieldScan(); return; }
-  if (fsActive) stopFieldScan();
-  startFieldScan(fieldId);
-}
-
-function startFieldScan(fieldId) {
-  const container = document.getElementById('fs_' + fieldId);
-  const btn = document.getElementById('fsBtn_' + fieldId);
-  container.classList.add('visible');
-  btn.classList.add('active');
-  btn.textContent = '⏹ 停止';
-  fsActive = fieldId;
-
-  Quagga.init({
-    inputStream: {
-      name: 'Live', type: 'LiveStream',
-      target: document.getElementById('fs_interactive_' + fieldId),
-      constraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    },
-    decoder: {
-      readers: [
-        'code_128_reader','code_39_reader','ean_reader','ean_8_reader',
-        'upc_reader','upc_e_reader','i2of5_reader','codabar_reader'
-      ]
-    }
-  }, function(err) {
-    if (err) { showToast('カメラ起動失敗'); stopFieldScan(); return; }
-    const tgt = document.getElementById('fs_interactive_' + fieldId);
-    tgt.querySelectorAll('canvas').forEach(function(c){ c.style.cssText = 'display:none!important'; });
-    Quagga.start();
-  });
-
-  let lastFsCode = null;
-  Quagga.onDetected(function(data) {
-    const code = data.codeResult.code;
-    if (code === lastFsCode) return;
-    lastFsCode = code;
-    document.getElementById(fieldId).value = code;
-    showToast('読み取り完了: ' + code);
-    stopFieldScan();
-  });
-}
-
-function stopFieldScan() {
-  if (!fsActive) return;
-  try { Quagga.stop(); } catch(e) {}
-  const container = document.getElementById('fs_' + fsActive);
-  const btn = document.getElementById('fsBtn_' + fsActive);
-  if (container) container.classList.remove('visible');
-  if (btn) { btn.classList.remove('active'); btn.textContent = '📷 スキャン'; }
-  fsActive = null;
-}
-
-
-
-// 🤖 AI解析（Claude）
-function triggerAiOcr() { document.getElementById('ocrFileInputAi').click(); }
-async function handleAiOcr(e) {
-  const file = e.target.files[0]; if (!file) return;
-  e.target.value = '';
-  resetOcr();
-  const resized = await resizeImage(file, 1600);
-  const base64Data = resized.split(',')[1];
-  document.getElementById('ocrPreview').src = resized;
-  document.getElementById('ocrPreviewWrap').classList.add('visible');
-  document.getElementById('ocrErr').classList.remove('visible');
-  document.getElementById('ocrOverlay').classList.add('visible');
-  try {
-    const tokens = await callClaudeOcrTokens(base64Data);
-    document.getElementById('ocrOverlay').classList.remove('visible');
-    showOcrTokens(tokens, '🤖 AI解析結果');
-  } catch(err) {
-    document.getElementById('ocrOverlay').classList.remove('visible');
-    const el = document.getElementById('ocrErr');
-    el.textContent = 'AI解析エラー: ' + err.message; el.classList.add('visible');
-  }
-}
-// CSV
-
-function resizeImage(file, maxWidth) {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.width);
-        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function callClaudeOcrTokens(base64Data) {
-  const gasUrl = CFG.gasUrl || GAS_DEFAULT;
-  const prompt = 'この画像（日本の宅配便の送り状）に含まれる全てのテキストを読み取ってください。\n以下の項目が特に重要です: 送り状番号・氏名・会社名・住所・品名・数量\n必ずJSON形式のみで返してください。\n\n{"items":["テキスト1","テキスト2","テキスト3",...]}\n\nルール:\n- 意味のある単位（番号・氏名・住所・品名など）で分割\n- 数字列は1つの番号として扱う（複数あれば別々に）\n- 空白や記号のみは除外\n- 類似の重複は1つにまとめる\n- 20件以内';
-  const res = await fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ mode: 'ocr', image: base64Data, mimeType: 'image/jpeg', prompt }) });
-  if (!res.ok) throw new Error('GAS error: ' + res.status);
-  const d = await res.json();
-  if (d.error) throw new Error(d.error);
-  if (!d.text) throw new Error('レスポンスが空です');
-  const parsed = JSON.parse(d.text.replace(/```json|```/g, '').trim());
-  return parsed.items || [];
-}
-
-function showOcrTokens(tokens, title) {
-  const list = document.getElementById('ocrTokensList');
-  document.getElementById('ocrTokensBox').querySelector('.ocr-tokens-title').textContent = title || '読み取り結果';
-  if (!tokens.length) {
-    list.innerHTML = '<div style="font-size:0.8rem;color:var(--ink2);text-align:center;padding:10px">テキストが検出されませんでした</div>';
-  } else {
-    list.innerHTML = tokens.map((text, i) => `
-      <div class="ocr-token-row">
-        <div class="ocr-token-text">${esc(text)}</div>
-        <div class="ocr-token-btns">
-          <button class="ocr-token-btn t-old"  onclick="applyToken(${i},'old')">旧送状番号</button>
-          <button class="ocr-token-btn t-new"  onclick="applyToken(${i},'new')">返送番号</button>
-          <button class="ocr-token-btn t-recv" onclick="applyToken(${i},'recv')">受取人名</button>
-          <button class="ocr-token-btn t-item" onclick="applyToken(${i},'item')">商品名</button>
-        </div>
-      </div>`).join('');
-  }
-  window._ocrTokens = tokens;
-  document.getElementById('ocrTokensBox').classList.add('visible');
-}
-
-function applyToken(idx, field) {
-  const text = (window._ocrTokens || [])[idx] || '';
-  const map = { old: 'oldTrackingNo', new: 'returnTrackingNo', recv: 'recipientName', item: 'itemName' };
-  if (map[field]) { document.getElementById(map[field]).value = text; showToast('反映しました ✓'); }
-}
-
-function resetOcr() {
-  ['ocrPreviewWrap','ocrTokensBox','ocrErr','ocrOverlay'].forEach(id =>
-    document.getElementById(id).classList.remove('visible'));
-  document.getElementById('ocrPreview').src = ''; window._ocrTokens = [];
-}
-
 function exportCSV(){
   if(!history.length){showToast('登録データがありません');return;}
   const header=['登録日時','到着日','時刻','旧送り状番号','返送送り状番号','受取人氏名','受取人住所','商品名・荷姿','返送理由','数量','ロケーション','ロケーション状態','返送済み','返送日','返送備考'];
@@ -1099,8 +849,17 @@ function exportCSV(){
 }
 
 // ══════════════════════════════════════
-//  OCR — 高速（Tesseract.js） & AI（Claude）
+//  UTILS
 // ══════════════════════════════════════
+function setStatus(msg,type=''){
+  const el=document.getElementById('status');if(!el)return;
+  el.className=type;
+  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 </script>
 </body>
 </html>
