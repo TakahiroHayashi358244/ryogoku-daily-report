@@ -1045,8 +1045,10 @@ function renderStaffList() {
     <div class="staff-block" data-index="${i}" draggable="true">
       <div class="staff-row">
         <div class="drag-handle" title="ドラッグして並べ替え">⠿</div>
-        <input type="text" value="${s.name}" placeholder="氏名"
-               oninput="staffData[${i}].name=this.value">
+        <input type="text"
+               data-field="name" data-idx="${i}"
+               value="${s.name.replace(/"/g, '&quot;')}" placeholder="氏名"
+               class="staff-input">
         <button class="staff-delete-btn" onclick="deleteStaffRow(${i})">✕</button>
       </div>
       <div class="staff-row-detail">
@@ -1062,12 +1064,16 @@ function renderStaffList() {
         <div>
           ${s.isFixed
             ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">月額固定金額（円）</div>
-               <input type="number" value="${s.fixedAmount}" min="0" step="1000"
-                      oninput="staffData[${i}].fixedAmount=Number(this.value)"
+               <input type="number"
+                      data-field="fixedAmount" data-idx="${i}"
+                      value="${s.fixedAmount}" min="0" step="1000"
+                      class="staff-input"
                       style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
             : `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">時給（円）</div>
-               <input type="number" value="${s.hourlyRate}" min="0" step="50"
-                      oninput="staffData[${i}].hourlyRate=Number(this.value)"
+               <input type="number"
+                      data-field="hourlyRate" data-idx="${i}"
+                      value="${s.hourlyRate}" min="0" step="50"
+                      class="staff-input"
                       style="width:100%;padding:8px 10px;border:1.5px solid #e0ddd8;border-radius:8px;font-size:14px;background:var(--pale);">`
           }
         </div>
@@ -1076,6 +1082,16 @@ function renderStaffList() {
     <hr style="border:none;border-top:1.5px solid #f0ede8;margin:2px 0;">
   `).join('');
 
+  // oninputをまとめてイベント委任（インデックスではなくdata-idx属性で特定）
+  container.oninput = function(e) {
+    const input = e.target.closest('.staff-input');
+    if (!input) return;
+    const idx   = Number(input.dataset.idx);
+    const field = input.dataset.field;
+    if (isNaN(idx) || !field) return;
+    staffData[idx][field] = input.type === 'number' ? Number(input.value) : input.value;
+  };
+
   initDragAndDrop();
 }
 
@@ -1083,6 +1099,16 @@ function renderStaffList() {
 let dragSrcIndex = null;
 let touchDragEl  = null;
 let touchClone   = null;
+
+// 並べ替え前に現在の入力値をstaffDataに保存
+function syncInputsToStaffData() {
+  document.querySelectorAll('.staff-input').forEach(input => {
+    const idx   = Number(input.dataset.idx);
+    const field = input.dataset.field;
+    if (isNaN(idx) || !field || !staffData[idx]) return;
+    staffData[idx][field] = input.type === 'number' ? Number(input.value) : input.value;
+  });
+}
 
 function initDragAndDrop() {
   const blocks = document.querySelectorAll('.staff-block');
@@ -1110,6 +1136,7 @@ function initDragAndDrop() {
       e.preventDefault();
       const targetIndex = Number(block.dataset.index);
       if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+        syncInputsToStaffData(); // 並べ替え前に入力値を保存
         const moved = staffData.splice(dragSrcIndex, 1)[0];
         staffData.splice(targetIndex, 0, moved);
         renderStaffList();
@@ -1167,6 +1194,7 @@ function initDragAndDrop() {
       if (targetBlock) {
         const targetIndex = Number(targetBlock.dataset.index);
         if (dragSrcIndex !== null && dragSrcIndex !== targetIndex) {
+          syncInputsToStaffData(); // 並べ替え前に入力値を保存
           const moved = staffData.splice(dragSrcIndex, 1)[0];
           staffData.splice(targetIndex, 0, moved);
           renderStaffList();
