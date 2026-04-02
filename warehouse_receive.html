@@ -826,12 +826,12 @@ async function getTessWorker() {
   if (!window.Tesseract) {
     await new Promise((res, rej) => {
       const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.5/tesseract.min.js';
       s.onload = res; s.onerror = rej;
       document.head.appendChild(s);
     });
   }
-  tessWorker = await Tesseract.createWorker('jpn+eng', 1, {
+  tessWorker = await Tesseract.createWorker({
     logger: m => {
       if (m.status === 'recognizing text') {
         const pct = Math.round(m.progress * 100);
@@ -840,6 +840,8 @@ async function getTessWorker() {
       }
     }
   });
+  await tessWorker.loadLanguage('jpn+eng');
+  await tessWorker.initialize('jpn+eng');
   return tessWorker;
 }
 
@@ -897,8 +899,7 @@ async function handleFastOcr(e) {
     const { data } = await worker.recognize(resized);
     document.getElementById('tessProgress').classList.remove('visible');
     // テキストを行単位で分割・クリーニング
-    const lines = data.text.split('
-')
+    const lines = data.text.split('\n')
       .map(l => l.trim())
       .filter(l => l.length >= 2 && !/^[\s\-_=\.\,\/]+$/.test(l));
     // 重複除去
