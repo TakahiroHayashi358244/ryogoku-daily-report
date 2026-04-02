@@ -56,10 +56,11 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em}
 .ocr-label span{font-size:0.72rem;color:#aaa}
 .badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:8px;vertical-align:middle}
-.scan-btn{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2);border-radius:6px;padding:6px 10px;font-size:0.72rem;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all 0.15s}
-.scan-btn:hover{background:var(--ok);border-color:var(--ok);color:#fff}
+.scan-btn{display:inline-block;background:var(--surface2);border:1.5px solid var(--border);color:var(--ink2);border-radius:6px;padding:6px 10px;font-size:0.72rem;cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all 0.15s;user-select:none;-webkit-user-select:none}
+.scan-btn:hover,.scan-btn:active{background:var(--ok);border-color:var(--ok);color:#fff}
+.scan-file-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px}
 .input-scan-row{display:flex;gap:6px;align-items:center}
-.input-scan-row input{flex:1;min-width:0}
+.input-scan-row>input,.input-scan-row>.mono{flex:1;min-width:0}
 .tess-progress-wrap{display:none;margin-bottom:10px;background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:10px 14px}
 .tess-progress-wrap.visible{display:block}
 .tess-progress-label{font-size:0.75rem;color:var(--ok);font-weight:700;margin-bottom:6px}
@@ -189,8 +190,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
         <span>撮影→テキスト認識→各欄に反映</span>
       </div>
     </div>
-    <input type="file" id="ocrFileInputFast" accept="image/*" capture="environment" onchange="handleFastOcr(event)" style="display:none">
-    <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)" style="display:none">
+    <input type="file" id="ocrFileInputFast" accept="image/*" capture="environment" onchange="handleFastOcr(event)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px">
+    <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px">
     <!-- Tesseract進捗（高速スキャン用）-->
     <div class="tess-progress-wrap" id="tessProgress">
       <div class="tess-progress-label" id="tessLabel">解析中...</div>
@@ -226,21 +227,24 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>旧送り状番号<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
-        <button class="scan-btn" onclick="triggerFastOcrFor('oldTrackingNo')">⚡ スキャン</button>
+        <label class="scan-btn" for="scanInput_oldTrackingNo">⚡ スキャン</label>
+        <input class="scan-file-input" type="file" id="scanInput_oldTrackingNo" accept="image/*" capture="environment" onchange="handleDirectScan(event,'oldTrackingNo')">
       </div>
     </div>
     <div class="form-row">
       <label>返送時の送り状番号<span class="opt">任意</span></label>
       <div class="input-scan-row">
         <input type="tel" class="mono" id="returnTrackingNo" placeholder="返送に使用した伝票番号" maxlength="30">
-        <button class="scan-btn" onclick="triggerFastOcrFor('returnTrackingNo')">⚡ スキャン</button>
+        <label class="scan-btn" for="scanInput_returnTrackingNo">⚡ スキャン</label>
+        <input class="scan-file-input" type="file" id="scanInput_returnTrackingNo" accept="image/*" capture="environment" onchange="handleDirectScan(event,'returnTrackingNo')">
       </div>
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
-        <button class="scan-btn" onclick="triggerFastOcrFor('recipientName')">⚡ スキャン</button>
+        <label class="scan-btn" for="scanInput_recipientName">⚡ スキャン</label>
+        <input class="scan-file-input" type="file" id="scanInput_recipientName" accept="image/*" capture="environment" onchange="handleDirectScan(event,'recipientName')">
       </div>
     </div>
     <div class="form-row">
@@ -251,7 +255,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>商品名・荷姿<span class="req">*</span></label>
       <div class="input-scan-row">
         <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
-        <button class="scan-btn" onclick="triggerFastOcrFor('itemName')">⚡ スキャン</button>
+        <label class="scan-btn" for="scanInput_itemName">⚡ スキャン</label>
+        <input class="scan-file-input" type="file" id="scanInput_itemName" accept="image/*" capture="environment" onchange="handleDirectScan(event,'itemName')">
       </div>
     </div>
     <div class="form-row">
@@ -303,7 +308,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <span style="font-size:0.75rem;font-weight:400;color:#aaa;margin-left:6px">任意 — ヒットすれば商品名に反映</span>
     <span id="janToggleIcon" style="margin-left:auto;font-size:0.9rem">▼</span>
   </div>
-  <div id="janPanel" style="display:none">
+  <div id="janPanel" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px">
     <div class="card-body">
       <div class="form-row" style="margin:0">
         <label>JANコード<span class="opt">スキャンまたは手入力</span></label>
@@ -836,6 +841,38 @@ async function getTessWorker() {
     }
   });
   return tessWorker;
+}
+
+// ─── 各フィールド直接スキャン ───
+async function handleDirectScan(e, fieldId) {
+  const file = e.target.files[0]; if (!file) return;
+  e.target.value = '';
+  // Tesseractで認識
+  resetOcr();
+  const resized = await resizeImage(file, 1200);
+  document.getElementById('ocrPreview').src = resized;
+  document.getElementById('ocrPreviewWrap').classList.add('visible');
+  document.getElementById('tessProgress').classList.add('visible');
+  document.getElementById('tessBar').style.width = '0%';
+  document.getElementById('tessLabel').textContent = 'スキャン中...';
+  try {
+    const worker = await getTessWorker();
+    const { data } = await worker.recognize(resized);
+    document.getElementById('tessProgress').classList.remove('visible');
+    const lines = data.text.split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length >= 2);
+    if (lines.length > 0) {
+      document.getElementById(fieldId).value = lines[0];
+      showToast('スキャン完了 ✓');
+    } else {
+      showToast('文字を検出できませんでした');
+    }
+  } catch(err) {
+    document.getElementById('tessProgress').classList.remove('visible');
+    const el = document.getElementById('ocrErr');
+    el.textContent = 'スキャンエラー: ' + err.message; el.classList.add('visible');
+  }
 }
 
 // ⚡ 高速スキャン（Tesseract.js）
