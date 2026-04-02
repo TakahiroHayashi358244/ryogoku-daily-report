@@ -49,13 +49,21 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .pf-actions{display:flex;gap:8px;margin-top:10px}
 .btn-use{flex:1;background:var(--ok);color:#fff;border:none;border-radius:7px;padding:9px;font-weight:700;font-size:0.85rem;cursor:pointer}
 /* OCR */
-.ocr-trigger{display:flex;align-items:center;gap:12px;padding:13px 14px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none;margin-bottom:12px}
+.ocr-btns-row{display:flex;gap:8px;margin-bottom:12px}
+.ocr-trigger{display:flex;align-items:center;gap:10px;padding:11px 12px;background:linear-gradient(135deg,#1a1714 0%,#2d2620 100%);border-radius:var(--radius);cursor:pointer;border:1.5px solid #3a3028;transition:opacity 0.15s;user-select:none;flex:1}
 .ocr-trigger:hover{opacity:0.88}
-.ocr-icon{font-size:1.5rem;flex-shrink:0}
-.ocr-label{color:#fff}
-.ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:0.1em}
-.ocr-label span{font-size:0.72rem;color:#aaa}
-.badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:8px;vertical-align:middle}
+.ocr-trigger.fast{background:linear-gradient(135deg,#0f2a1a 0%,#1a3a2a 100%);border-color:#2a4a3a}
+.ocr-icon{font-size:1.4rem;flex-shrink:0}
+.ocr-label{color:#fff;min-width:0}
+.ocr-label strong{display:block;font-family:'Bebas Neue',sans-serif;font-size:0.88rem;letter-spacing:0.08em;white-space:nowrap}
+.ocr-label span{font-size:0.64rem;color:#aaa;display:block}
+.badge-ocr{display:inline-block;background:var(--accent);color:#fff;font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.badge-fast{display:inline-block;background:var(--ok);color:#fff;font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.tess-progress-wrap{display:none;margin-bottom:10px;background:var(--surface2);border:1.5px solid var(--ok);border-radius:8px;padding:10px 14px}
+.tess-progress-wrap.visible{display:block}
+.tess-progress-label{font-size:0.75rem;color:var(--ok);font-weight:700;margin-bottom:6px}
+.tess-bar-bg{background:#ddd;border-radius:4px;height:6px;overflow:hidden}
+.tess-bar{background:var(--ok);height:6px;width:0%;transition:width 0.2s;border-radius:4px}
 .ocr-preview-wrap{display:none;margin-bottom:10px;position:relative}
 .ocr-preview-wrap.visible{display:block}
 #ocrPreview{width:100%;border-radius:8px;display:block;max-height:200px;object-fit:contain;background:#000}
@@ -172,15 +180,30 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="card-head"><span class="step">1</span>返品情報</div>
   <div class="card-body">
 
-    <!-- OCR -->
-    <div class="ocr-trigger" onclick="triggerOcr()">
-      <div class="ocr-icon">📸</div>
-      <div class="ocr-label">
-        <strong>送り状をスキャン<span class="badge-ocr">AI</span></strong>
-        <span>テキストをタップして各欄に反映</span>
+    <!-- OCR 2ボタン -->
+    <div class="ocr-btns-row">
+      <div class="ocr-trigger fast" onclick="triggerFastOcr()">
+        <div class="ocr-icon">⚡</div>
+        <div class="ocr-label">
+          <strong>高速スキャン<span class="badge-fast">LOCAL</span></strong>
+          <span>端末内で即時解析</span>
+        </div>
+      </div>
+      <div class="ocr-trigger" onclick="triggerAiOcr()">
+        <div class="ocr-icon">🤖</div>
+        <div class="ocr-label">
+          <strong>AI解析<span class="badge-ocr">Claude</span></strong>
+          <span>高精度・数秒かかる</span>
+        </div>
       </div>
     </div>
-    <input type="file" id="ocrFileInput" accept="image/*" capture="environment" onchange="handleOcrImage(event)">
+    <input type="file" id="ocrFileInputFast" accept="image/*" capture="environment" onchange="handleFastOcr(event)">
+    <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)">
+    <!-- Tesseract進捗 -->
+    <div class="tess-progress-wrap" id="tessProgress">
+      <div class="tess-progress-label" id="tessLabel">解析中...</div>
+      <div class="tess-bar-bg"><div class="tess-bar" id="tessBar"></div></div>
+    </div>
     <div class="ocr-preview-wrap" id="ocrPreviewWrap">
       <img id="ocrPreview" src="" alt="">
       <div class="ocr-overlay" id="ocrOverlay">
@@ -782,47 +805,112 @@ function exportCSV(){
   a.click();
 }
 
-// OCR
-function triggerOcr(){document.getElementById('ocrFileInput').click();}
-async function handleOcrImage(e){
-  const file=e.target.files[0];if(!file)return;
-  const resized=await resizeImage(file,1600);
-  const base64Data=resized.split(',')[1];
-  document.getElementById('ocrPreview').src=resized;
+// ══════════════════════════════════════
+//  OCR — 高速（Tesseract.js） & AI（Claude）
+// ══════════════════════════════════════
+let tessWorker = null;
+
+// Tesseract ワーカーを遅延ロード
+async function getTessWorker() {
+  if (tessWorker) return tessWorker;
+  // Tesseract.js v4 CDN
+  if (!window.Tesseract) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  tessWorker = await Tesseract.createWorker('jpn+eng', 1, {
+    logger: m => {
+      if (m.status === 'recognizing text') {
+        const pct = Math.round(m.progress * 100);
+        document.getElementById('tessBar').style.width = pct + '%';
+        document.getElementById('tessLabel').textContent = `解析中... ${pct}%`;
+      }
+    }
+  });
+  return tessWorker;
+}
+
+// ⚡ 高速スキャン（Tesseract.js）
+function triggerFastOcr() { document.getElementById('ocrFileInputFast').click(); }
+async function handleFastOcr(e) {
+  const file = e.target.files[0]; if (!file) return;
+  e.target.value = '';
+  resetOcr();
+  const resized = await resizeImage(file, 1200);
+  document.getElementById('ocrPreview').src = resized;
+  document.getElementById('ocrPreviewWrap').classList.add('visible');
+  document.getElementById('tessProgress').classList.add('visible');
+  document.getElementById('tessBar').style.width = '0%';
+  document.getElementById('tessLabel').textContent = 'Tesseractを初期化中...';
+  try {
+    const worker = await getTessWorker();
+    document.getElementById('tessLabel').textContent = '解析中... 0%';
+    const { data } = await worker.recognize(resized);
+    document.getElementById('tessProgress').classList.remove('visible');
+    // テキストを行単位で分割・クリーニング
+    const lines = data.text.split('
+')
+      .map(l => l.trim())
+      .filter(l => l.length >= 2 && !/^[\s\-_=\.\,\/]+$/.test(l));
+    // 重複除去
+    const unique = [...new Set(lines)].slice(0, 25);
+    showOcrTokens(unique, '⚡ 高速スキャン結果');
+  } catch(err) {
+    document.getElementById('tessProgress').classList.remove('visible');
+    const el = document.getElementById('ocrErr');
+    el.textContent = '高速OCRエラー: ' + err.message; el.classList.add('visible');
+  }
+}
+
+// 🤖 AI解析（Claude）
+function triggerAiOcr() { document.getElementById('ocrFileInputAi').click(); }
+async function handleAiOcr(e) {
+  const file = e.target.files[0]; if (!file) return;
+  e.target.value = '';
+  resetOcr();
+  const resized = await resizeImage(file, 1600);
+  const base64Data = resized.split(',')[1];
+  document.getElementById('ocrPreview').src = resized;
   document.getElementById('ocrPreviewWrap').classList.add('visible');
   document.getElementById('ocrTokensBox').classList.remove('visible');
   document.getElementById('ocrErr').classList.remove('visible');
   document.getElementById('ocrOverlay').classList.add('visible');
-  try{
-    const tokens=await callClaudeOcrTokens(base64Data);
+  try {
+    const tokens = await callClaudeOcrTokens(base64Data);
     document.getElementById('ocrOverlay').classList.remove('visible');
-    showOcrTokens(tokens);
-  }catch(err){
+    showOcrTokens(tokens, '🤖 AI解析結果');
+  } catch(err) {
     document.getElementById('ocrOverlay').classList.remove('visible');
-    const el=document.getElementById('ocrErr');el.textContent='読み取りエラー: '+err.message;el.classList.add('visible');
+    const el = document.getElementById('ocrErr');
+    el.textContent = 'AI解析エラー: ' + err.message; el.classList.add('visible');
   }
-  e.target.value='';
 }
-function resizeImage(file,maxWidth){
-  return new Promise(resolve=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const img=new Image();
-      img.onload=()=>{
-        const scale=Math.min(1,maxWidth/img.width);
-        const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
-        const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',0.85));
+
+function resizeImage(file, maxWidth) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
       };
-      img.src=ev.target.result;
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
-async function callClaudeOcrTokens(base64Data){
-  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
-  const prompt=`この画像（日本の宅配便の送り状）に含まれる全てのテキストを読み取ってください。
+
+async function callClaudeOcrTokens(base64Data) {
+  const gasUrl = CFG.gasUrl || GAS_DEFAULT;
+  const prompt = `この画像（日本の宅配便の送り状）に含まれる全てのテキストを読み取ってください。
 以下の項目が特に重要です: 送り状番号・氏名・会社名・住所・品名・数量
 必ずJSON形式のみで返してください。
 
@@ -834,39 +922,46 @@ async function callClaudeOcrTokens(base64Data){
 - 空白や記号のみは除外
 - 類似の重複は1つにまとめる
 - 20件以内`;
-  const res=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mode:'ocr',image:base64Data,mimeType:'image/jpeg',prompt})});
-  if(!res.ok)throw new Error('GAS error: '+res.status);
-  const d=await res.json();
-  if(d.error)throw new Error(d.error);
-  if(!d.text)throw new Error('レスポンスが空です');
-  const parsed=JSON.parse(d.text.replace(/```json|```/g,'').trim());
-  return parsed.items||[];
+  const res = await fetch(gasUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ mode: 'ocr', image: base64Data, mimeType: 'image/jpeg', prompt }) });
+  if (!res.ok) throw new Error('GAS error: ' + res.status);
+  const d = await res.json();
+  if (d.error) throw new Error(d.error);
+  if (!d.text) throw new Error('レスポンスが空です');
+  const parsed = JSON.parse(d.text.replace(/```json|```/g, '').trim());
+  return parsed.items || [];
 }
-function showOcrTokens(tokens){
-  const list=document.getElementById('ocrTokensList');
-  if(!tokens.length){list.innerHTML='<div style="font-size:0.8rem;color:var(--ink2);text-align:center;padding:10px">テキストが検出されませんでした</div>';}
-  else{
-    list.innerHTML=tokens.map((text,i)=>`
+
+function showOcrTokens(tokens, title) {
+  const list = document.getElementById('ocrTokensList');
+  document.getElementById('ocrTokensBox').querySelector('.ocr-tokens-title').textContent = title || '読み取り結果';
+  if (!tokens.length) {
+    list.innerHTML = '<div style="font-size:0.8rem;color:var(--ink2);text-align:center;padding:10px">テキストが検出されませんでした</div>';
+  } else {
+    list.innerHTML = tokens.map((text, i) => `
       <div class="ocr-token-row">
         <div class="ocr-token-text">${esc(text)}</div>
         <div class="ocr-token-btns">
-          <button class="ocr-token-btn t-old"    onclick="applyToken(${i},'old')">旧送状番号</button>
-          <button class="ocr-token-btn t-new"    onclick="applyToken(${i},'new')">返送番号</button>
-          <button class="ocr-token-btn t-recv"   onclick="applyToken(${i},'recv')">受取人名</button>
-          <button class="ocr-token-btn t-item"   onclick="applyToken(${i},'item')">商品名</button>
+          <button class="ocr-token-btn t-old"  onclick="applyToken(${i},'old')">旧送状番号</button>
+          <button class="ocr-token-btn t-new"  onclick="applyToken(${i},'new')">返送番号</button>
+          <button class="ocr-token-btn t-recv" onclick="applyToken(${i},'recv')">受取人名</button>
+          <button class="ocr-token-btn t-item" onclick="applyToken(${i},'item')">商品名</button>
         </div>
       </div>`).join('');
   }
-  window._ocrTokens=tokens;
+  window._ocrTokens = tokens;
   document.getElementById('ocrTokensBox').classList.add('visible');
 }
-function applyToken(idx,field){
-  const text=(window._ocrTokens||[])[idx]||'';
-  const map={old:'oldTrackingNo',new:'returnTrackingNo',recv:'recipientName',item:'itemName'};
-  if(map[field]){document.getElementById(map[field]).value=text;showToast('反映しました ✓');}
+
+function applyToken(idx, field) {
+  const text = (window._ocrTokens || [])[idx] || '';
+  const map = { old: 'oldTrackingNo', new: 'returnTrackingNo', recv: 'recipientName', item: 'itemName' };
+  if (map[field]) { document.getElementById(map[field]).value = text; showToast('反映しました ✓'); }
 }
-function resetOcr(){
-  ['ocrPreviewWrap','ocrTokensBox','ocrErr','ocrOverlay'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+
+function resetOcr() {
+  ['ocrPreviewWrap','ocrTokensBox','ocrErr','ocrOverlay','tessProgress'].forEach(id =>
+    document.getElementById(id).classList.remove('visible'));
   document.getElementById('ocrPreview').src='';window._ocrTokens=[];
 }
 
