@@ -37,6 +37,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .history-table td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
 .history-table tr:hover{background:var(--surface2)}
 .history-table tr.row-overdue{background:#fff3f3}
+.history-table tr.row-returned{background:#f0faf5}
 /* JAN Scanner */
 .scan-wrap{display:flex;gap:8px;align-items:stretch}
 .scan-wrap input{flex:1}
@@ -209,7 +210,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <input type="file" id="ocrFileInputAi"   accept="image/*" capture="environment" onchange="handleAiOcr(event)" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;left:-9999px">
     <!-- Tesseract進捗（高速スキャン用）-->
     <div class="tess-progress-wrap" id="tessProgress">
-      <div class="tess-progress-label" id="tessLabel">解析中...</div>
+      <div class="tess-progress-label" id="tessLabel"></div>
       <div class="tess-bar-bg"><div class="tess-bar" id="tessBar"></div></div>
     </div>
     <div class="ocr-preview-wrap" id="ocrPreviewWrap">
@@ -391,8 +392,9 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row"><label>商品名・荷姿</label><input type="text" id="editItemName"></div>
     <div class="form-row"><label>返送理由</label><input type="text" id="editReason"></div>
     <div class="form-row"><label>数量</label><input type="tel" id="editQty"></div>
+    <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" placeholder="例: A-01-03"></div>
     <div class="edit-action-btns">
-      <button class="btn-edit-action btn-loc" onclick="editOpenLoc()">📍 ロケーション追加</button>
+      <button class="btn-edit-action btn-loc" onclick="editOpenLoc()">📍 ロケーション修正</button>
       <button class="btn-edit-action btn-ret" onclick="editOpenReturn()">📦 返送済みにする</button>
       <button class="btn-edit-action btn-dis" onclick="editDoDispose()">🗑 廃棄</button>
     </div>
@@ -445,14 +447,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
-      <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-<script>
+      <button class="btn-modal-cance<script>
 
 // ══════════════════════════════════════
 //  CONST & STATE
@@ -779,22 +774,19 @@ function renderHistory(syncFilter){
     const isOverdue=deadline&&!item.returned&&!item.disposed&&deadline<today;
     const daysLeft=deadline?Math.ceil((deadline-today)/86400000):null;
     const urgency=isOverdue?'⚠ 期限超過':(daysLeft!==null&&daysLeft<=3&&!item.returned&&!item.disposed)?`残${daysLeft}日`:'';
-    return `<tr class="${isOverdue?'row-overdue':''}" onclick="openEditModal(${i})">
+    const locText=item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>';
+    const rowClass=isOverdue?'row-overdue':(item.returned?'row-returned':'');
+    return `<tr class="${rowClass}" onclick="openEditModal(${i})">
       <td>${item.date||''}</td>
       <td class="mono" style="font-size:0.75rem">${esc(item.oldTracking)}</td>
       <td>${esc(item.recipient)}</td>
       <td style="font-size:0.8rem">${esc(item.itemName)}</td>
-      <td>${item.qty}</td>
-      <td>${item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>'}</td>
-      <td><span class="${item.returned?'badge-returned':'badge-unreturned'}" onclick="event.stopPropagation();toggleReturn(${i})">${item.returned?'返送済':'📦 未返送'}</span></td>
-      <td><span class="${item.disposed?'badge-disposed':'badge-dispose-btn'}" onclick="event.stopPropagation();toggleDispose(${i})">${item.disposed?'🗑 廃棄済':'廃棄'}</span></td>
-      <td style="color:var(--accent);font-size:0.75rem;font-weight:700">${urgency}</td>
+      <td>${locText}</td>
     </tr>`;
   }).join('');
   container.innerHTML=`<table class="history-table">
     <thead><tr>
-      <th>到着日</th><th>旧送状番号</th><th>受取人</th><th>商品名</th>
-      <th>数量</th><th>ロケーション</th><th>返送</th><th>廃棄</th><th>期限</th>
+      <th>到着日</th><th>旧送状番号</th><th>氏名</th><th>商品名</th><th>ロケーション</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
@@ -812,6 +804,7 @@ function openEditModal(i){
   document.getElementById('editItemName').value=item.itemName||'';
   document.getElementById('editReason').value=item.reason||'';
   document.getElementById('editQty').value=item.qty||1;
+  document.getElementById('editLocation').value=item.location||'';
   // アクションボタンの状態制御
   const retBtn=document.querySelector('.btn-ret');
   const disBtn=document.querySelector('.btn-dis');
@@ -847,6 +840,8 @@ function saveEdit(){
   history[i].itemName=document.getElementById('editItemName').value.trim();
   history[i].reason=document.getElementById('editReason').value.trim();
   history[i].qty=parseInt(document.getElementById('editQty').value)||1;
+  const newLoc=document.getElementById('editLocation').value.trim();
+  if(newLoc) { history[i].location=newLoc; history[i].locPending=false; }
   save();renderHistory();sendToGasUpdate(history[i]);closeModal('editModal');showToast('更新しました ✓');
 }
 function openLocModal(i){
@@ -1007,6 +1002,10 @@ function setStatus(msg,type=''){
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+</script>tHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 
