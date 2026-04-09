@@ -448,6 +448,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 <div class="modal-bg" id="locModal">
   <div class="modal">
     <h3>ロケーション設定</h3>
+    <input type="hidden" id="locIndex">
     <div class="form-row">
       <label>ロケーション番号</label>
       <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="A-01-03">
@@ -466,13 +467,14 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 <div class="modal-bg" id="returnModal">
   <div class="modal">
     <h3>返送済みにする</h3>
+    <input type="hidden" id="returnIndex">
     <div class="form-row">
       <label>返送日</label>
       <input type="date" id="returnDate">
     </div>
     <div class="form-row">
       <label>備考</label>
-      <input type="text" id="returnNoteInput" autocomplete="off" placeholder="任意">
+      <input type="text" id="returnNote" autocomplete="off" placeholder="任意">
     </div>
     <div class="modal-btns">
       <button class="btn-modal-ok" onclick="saveReturn()">保存</button>
