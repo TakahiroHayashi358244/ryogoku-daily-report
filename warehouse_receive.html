@@ -622,43 +622,67 @@ function saveConfig(){
 function checkUpdate(){
   const btn=document.getElementById('updateBtn');
   const status=document.getElementById('updateStatus');
-  if(!('serviceWorker' in navigator)){
-    showToast('Service Worker非対応のブラウザです');return;
+
+  function setStatus(msg, color){
+    status.style.display='block';
+    status.textContent=msg;
+    status.style.color=color||'var(--ink2)';
   }
-  btn.textContent='確認中...';btn.disabled=true;
-  status.style.display='block';
-  status.textContent='サーバーの最新版を確認しています...';
-  status.style.color='var(--ink2)';
-  navigator.serviceWorker.ready.then(reg=>{
-    reg.active.postMessage('CHECK_UPDATE');
-    const handler=event=>{
-      navigator.serviceWorker.removeEventListener('message',handler);
+  function resetBtn(){
+    btn.textContent='アップデート確認';
+    btn.disabled=false;
+    btn.onclick=checkUpdate;
+  }
+
+  if(!('serviceWorker' in navigator)){
+    showToast('ホーム画面から起動してください');return;
+  }
+
+  btn.textContent='確認中...';
+  btn.disabled=true;
+  setStatus('サーバーの最新版を確認しています...');
+
+  // タイムアウト（8秒）
+  const timer=setTimeout(()=>{
+    resetBtn();
+    setStatus('タイムアウト。ネットワークを確認してください。','var(--accent)');
+  },8000);
+
+  // SWからの応答を一度だけ受け取る
+  function handler(event){
+    if(event.data!=='UPDATED'&&event.data!=='ERROR')return;
+    clearTimeout(timer);
+    navigator.serviceWorker.removeEventListener('message',handler);
+    if(event.data==='UPDATED'){
+      setStatus('✓ 最新版に更新しました。タップして適用してください。','var(--ok)');
+      btn.textContent='リロードして適用';
       btn.disabled=false;
-      if(event.data==='UPDATED'){
-        status.textContent='✓ 最新版に更新しました。リロードして適用してください。';
-        status.style.color='var(--ok)';
-        btn.textContent='リロードして適用';
-        btn.onclick=()=>location.reload(true);
-      } else {
-        status.textContent='✗ 更新失敗。ネットワークを確認してください。';
-        status.style.color='var(--accent)';
-        btn.textContent='アップデート確認';
-        btn.onclick=checkUpdate;
+      btn.onclick=()=>location.reload(true);
+    } else {
+      resetBtn();
+      setStatus('✗ 更新失敗。ネットワークを確認してください。','var(--accent)');
+    }
+  }
+  navigator.serviceWorker.addEventListener('message',handler);
+
+  // SWにメッセージ送信
+  navigator.serviceWorker.getRegistration()
+    .then(reg=>{
+      if(!reg||!reg.active){
+        clearTimeout(timer);
+        navigator.serviceWorker.removeEventListener('message',handler);
+        resetBtn();
+        setStatus('Service Worker未登録。ページをリロードしてください。','var(--accent)');
+        return;
       }
-    };
-    navigator.serviceWorker.addEventListener('message',handler);
-    setTimeout(()=>{
+      reg.active.postMessage('CHECK_UPDATE');
+    })
+    .catch(()=>{
+      clearTimeout(timer);
       navigator.serviceWorker.removeEventListener('message',handler);
-      if(btn.disabled){
-        btn.disabled=false;btn.textContent='アップデート確認';btn.onclick=checkUpdate;
-        status.textContent='タイムアウト。ネットワークを確認してください。';
-        status.style.color='var(--accent)';
-      }
-    },10000);
-  }).catch(()=>{
-    btn.disabled=false;btn.textContent='アップデート確認';
-    status.textContent='再読み込みしてから再試行してください。';
-  });
+      resetBtn();
+      setStatus('エラーが発生しました。再試行してください。','var(--accent)');
+    });
 }
 
 // ══════════════════════════════════════
