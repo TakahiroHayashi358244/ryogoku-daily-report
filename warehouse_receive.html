@@ -479,7 +479,40 @@ window.onload=()=>{
   if(CFG.deadlineDays) document.getElementById('deadlineDays').value=CFG.deadlineDays;
   if(!CFG.gasUrl) document.getElementById('configPanel').classList.add('open');
   renderHistory();
+  // バーコードスキャナ対応: Enter後に次の欄へフォーカス移動＋ソフトキーボード強制表示
+  setupScannerEnterHandlers();
 };
+
+function setupScannerEnterHandlers() {
+  // スキャナ入力の流れ: 旧送状番号 → 返送番号 → 氏名 → 商品名
+  const scanFields = [
+    {id:'oldTrackingNo',  next:'returnTrackingNo'},
+    {id:'returnTrackingNo', next:'recipientName'},
+    {id:'recipientName', next:'itemName'},
+    {id:'itemName',      next:null}
+  ];
+  scanFields.forEach(({id, next}) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        if (next) {
+          const nextEl = document.getElementById(next);
+          if (nextEl) {
+            // iOSでソフトキーボードを強制表示するためreadonly→解除のトリック
+            nextEl.setAttribute('readonly', true);
+            nextEl.focus();
+            setTimeout(() => {
+              nextEl.removeAttribute('readonly');
+              nextEl.focus();
+            }, 50);
+          }
+        }
+      }
+    });
+  });
+}
 function updateTime(){const n=new Date();document.getElementById('arrivalTime').value=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
 
 // ══════════════════════════════════════
