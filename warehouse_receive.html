@@ -446,7 +446,14 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-modal-cance<script>
+      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script>
 
 // ══════════════════════════════════════
 //  CONST & STATE
