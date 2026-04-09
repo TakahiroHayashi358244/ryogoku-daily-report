@@ -636,6 +636,8 @@ function toggleTrackingScanner(which) {
   if (trackingScanActive === which) {
     stopTrackingScanner();
   } else {
+    // JANカメラが起動中なら先に停止
+    if (scanning) stopCamera();
     if (trackingScanActive) stopTrackingScanner();
     startTrackingScanner(which);
   }
@@ -729,7 +731,12 @@ function stopTrackingScanner() {
 // ══════════════════════════════════════
 //  JAN SCANNER (QuaggaJS)
 // ══════════════════════════════════════
-function toggleCamera(){scanning?stopCamera():startCamera();}
+function toggleCamera(){
+  if(scanning){ stopCamera(); return; }
+  // trackingScannerが起動中なら先に停止
+  if(trackingScanActive) stopTrackingScanner();
+  startCamera();
+}
 function startCamera(){
   document.getElementById('scanner-container').classList.add('visible');
   const btn=document.getElementById('camBtn');btn.classList.add('active');btn.textContent='⏹';
