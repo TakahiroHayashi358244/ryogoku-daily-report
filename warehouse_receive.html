@@ -37,6 +37,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .history-table tr:hover{background:var(--surface2)}
 .history-table tr.row-overdue{background:#fff3f3}
 .history-table tr.row-returned{background:#f0faf5}
+.history-table tr.row-disposed{background:#f0f0f0;color:#999}
 /* 送状バーコードスキャナー */
 .tracking-input-wrap{display:flex;gap:8px;align-items:center}
 .tracking-input-wrap input{flex:1;min-width:0}
@@ -993,7 +994,7 @@ function renderHistory(syncFilter){
     const daysLeft=deadline?Math.ceil((deadline-today)/86400000):null;
     const urgency=isOverdue?'⚠ 期限超過':(daysLeft!==null&&daysLeft<=3&&!item.returned&&!item.disposed)?`残${daysLeft}日`:'';
     const locText=item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>';
-    const rowClass=isOverdue?'row-overdue':(item.returned?'row-returned':'');
+    const rowClass=item.disposed?'row-disposed':(isOverdue?'row-overdue':(item.returned?'row-returned':''));
     return `<tr class="${rowClass}" onclick="openEditModal(${i})">
       <td>${item.date||''}</td>
       <td class="mono" style="font-size:0.75rem">${esc(item.oldTracking)}</td>
