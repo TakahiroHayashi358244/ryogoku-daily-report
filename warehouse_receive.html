@@ -710,6 +710,23 @@ async function sendToGas(entry){
     })});
   }catch(e){console.warn('GAS send error:',e);}
 }
+async function sendToGasUpdate(entry){
+  const gasUrl=CFG.gasUrl||GAS_DEFAULT;
+  if(!gasUrl)return;
+  try{
+    await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+      mode:'update',
+      registeredAt:entry.registeredAt||'',
+      date:entry.date||'', time:entry.time||'',
+      oldTracking:entry.oldTracking||'', returnTracking:entry.returnTracking||'',
+      recipient:entry.recipient||'', recipientAddress:entry.recipientAddress||'',
+      itemName:entry.itemName||'', reason:entry.reason||'', qty:entry.qty||1,
+      location:entry.location||'', locPending:entry.locPending||false,
+      returned:entry.returned||false, returnedDate:entry.returnedDate||'', returnNote:entry.returnNote||'',
+      disposed:entry.disposed||false, disposedDate:entry.disposedDate||''
+    })});
+  }catch(e){console.warn('GAS update error:',e);}
+}
 function resetForm(){
   ['oldTrackingNo','returnTrackingNo','recipientName','recipientAddress','itemName','reasonOtherText'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
@@ -806,7 +823,7 @@ function editDoDispose(){
   if(!confirm('この商品を廃棄済みにしますか？'))return;
   history[i].disposed=true;
   history[i].disposedDate=new Date().toISOString().slice(0,10);
-  save();renderHistory();closeModal('editModal');showToast('廃棄済みにしました 🗑');
+  save();renderHistory();sendToGasUpdate(history[i]);closeModal('editModal');showToast('廃棄済みにしました 🗑');
 }
 function saveEdit(){
   const i=parseInt(document.getElementById('editIndex').value);
@@ -817,7 +834,7 @@ function saveEdit(){
   history[i].itemName=document.getElementById('editItemName').value.trim();
   history[i].reason=document.getElementById('editReason').value.trim();
   history[i].qty=parseInt(document.getElementById('editQty').value)||1;
-  save();renderHistory();closeModal('editModal');showToast('更新しました ✓');
+  save();renderHistory();sendToGasUpdate(history[i]);closeModal('editModal');showToast('更新しました ✓');
 }
 function openLocModal(i){
   const item=history[i];if(!item)return;
@@ -830,7 +847,7 @@ function saveLocation(){
   if(isNaN(i)||!history[i])return;
   history[i].location=document.getElementById('locInput2').value.trim();
   history[i].locPending=false;
-  save();renderHistory();closeModal('locModal');showToast('ロケーション更新 ✓');
+  save();renderHistory();sendToGasUpdate(history[i]);closeModal('locModal');showToast('ロケーション更新 ✓');
 }
 function openReturnModal(i){
   const item=history[i];if(!item)return;
@@ -845,13 +862,13 @@ function saveReturn(){
   history[i].returned=true;
   history[i].returnedDate=document.getElementById('returnDate').value;
   history[i].returnNote=document.getElementById('returnNote').value.trim();
-  save();renderHistory();closeModal('returnModal');showToast('返送済みに更新 ✓');
+  save();renderHistory();sendToGasUpdate(history[i]);closeModal('returnModal');showToast('返送済みに更新 ✓');
 }
 function toggleReturn(i){
   if(!history[i])return;
   if(history[i].returned){
     history[i].returned=false;history[i].returnedDate='';history[i].returnNote='';
-    save();renderHistory();showToast('未返送に戻しました');
+    save();renderHistory();sendToGasUpdate(history[i]);showToast('未返送に戻しました');
   }else{
     openReturnModal(i);
   }
@@ -860,11 +877,11 @@ function toggleDispose(i){
   if(!history[i])return;
   if(history[i].disposed){
     history[i].disposed=false;
-    save();renderHistory();showToast('廃棄を取り消しました');
+    save();renderHistory();sendToGasUpdate(history[i]);showToast('廃棄を取り消しました');
   }else{
     if(!confirm('この商品を廃棄済みにしますか？'))return;
     history[i].disposed=true;history[i].disposedDate=new Date().toISOString().slice(0,10);
-    save();renderHistory();showToast('廃棄済みにしました 🗑');
+    save();renderHistory();sendToGasUpdate(history[i]);showToast('廃棄済みにしました 🗑');
   }
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
