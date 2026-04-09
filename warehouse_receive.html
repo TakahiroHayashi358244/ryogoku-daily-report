@@ -51,7 +51,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .tracking-scanner .scan-line{position:absolute;left:4px;right:4px;height:2px;background:var(--accent2);box-shadow:0 0 6px var(--accent2);animation:sl 1.8s ease-in-out infinite}
 .tracking-scan-bar{display:flex;gap:8px;padding:8px;background:#111;align-items:center}
 .tracking-scan-hint{color:#aaa;font-size:0.75rem;flex:1}
-.btn-scan-shoot{background:var(--accent2);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:0.9rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-scan-shoot{background:#1a7fd4;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:1rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 3px 8px rgba(26,127,212,0.5);letter-spacing:0.05em}
 .btn-scan-cancel{background:none;border:1.5px solid #555;color:#aaa;border-radius:7px;padding:9px 12px;font-size:0.85rem;cursor:pointer}
 /* JAN Scanner */
 .scan-wrap{display:flex;gap:8px;align-items:stretch}
@@ -699,7 +699,10 @@ function shootTrackingBarcode(which) {
   }, function(result) {
     resetShootBtn();
     if (result && result.codeResult && result.codeResult.code) {
-      document.getElementById(fieldId).value = result.codeResult.code;
+      // 両端のAを除去（例: A1234567890A → 1234567890）
+      const raw = result.codeResult.code;
+      const cleaned = raw.replace(/^A+|A+$/g, '');
+      document.getElementById(fieldId).value = cleaned || raw;
       showToast('読み取り完了: ' + result.codeResult.code);
       stopTrackingScanner();
     } else {
@@ -1259,6 +1262,8 @@ function setStatus(msg,type=''){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
 
 
 
