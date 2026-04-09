@@ -804,7 +804,7 @@ async function handleAiOcr(e){
   const file=e.target.files[0];if(!file)return;
   e.target.value='';
   resetOcr();
-  const resized=await resizeImage(file,1600);
+  const resized=await resizeImage(file,900);
   const base64Data=resized.split(',')[1];
   document.getElementById('ocrPreview').src=resized;
   document.getElementById('ocrPreviewWrap').classList.add('visible');
@@ -829,7 +829,7 @@ function resizeImage(file,maxWidth){
         const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
         const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg',0.85));
+        resolve(canvas.toDataURL('image/jpeg',0.72));
       };
       img.src=ev.target.result;
     };
@@ -838,7 +838,7 @@ function resizeImage(file,maxWidth){
 }
 async function callClaudeOcrTokens(base64Data){
   const gasUrl=CFG.gasUrl||GAS_DEFAULT;
-  const prompt='この画像（日本の宅配便の送り状）に含まれる全てのテキストを読み取ってください。\n以下の項目が特に重要です: 送り状番号・氏名・会社名・住所・品名・数量\n必ずJSON形式のみで返してください。\n\n{"items":["テキスト1","テキスト2","テキスト3",...]}\n\nルール:\n- 意味のある単位（番号・氏名・住所・品名など）で分割\n- 数字列は1つの番号として扱う（複数あれば別々に）\n- 空白や記号のみは除外\n- 類似の重複は1つにまとめる\n- 20件以内';
+  const prompt='この送り状画像のテキストをJSON形式のみで返してください。{"items":["テキスト1","テキスト2",...]}。送り状番号・氏名・住所・品名を優先して抽出してください。';
   const res=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mode:'ocr',image:base64Data,mimeType:'image/jpeg',prompt})});
   if(!res.ok)throw new Error('GAS error: '+res.status);
   const d=await res.json();
