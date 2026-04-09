@@ -2,6 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Return Manager">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Return Manager</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -422,6 +426,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       </div>
     </div>
     <button class="btn-use" style="width:100%;margin-top:4px" onclick="saveConfig()">保存</button>
+    <button id="updateBtn" class="btn-use" style="width:100%;margin-top:8px;background:var(--accent2)" onclick="checkUpdate()">アップデート確認</button>
+    <div id="updateStatus" style="font-size:0.75rem;color:var(--ink2);text-align:center;margin-top:6px;display:none"></div>
   </div>
 </div>
 
@@ -517,7 +523,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <div class="sync-filter-opts">
         <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
-        <labe<label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
+        <labe<label class="sync-opt"><input type="radio" na<label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="overdue"> 返送期限切れ</label>
       </div>
@@ -545,6 +551,13 @@ window._ocrTokens=[];
 // ══════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════
+// Service Worker登録
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/ryogoku-daily-report/sw.js')
+    .then(reg => console.log('SW registered', reg.scope))
+    .catch(err => console.warn('SW registration failed', err));
+}
+
 window.onload=()=>{
   const _d=new Date();
   const _tz=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
@@ -604,6 +617,48 @@ function saveConfig(){
   localStorage.setItem('wh_deadline_days',CFG.deadlineDays);
   showToast('設定を保存しました ✓');
   document.getElementById('configPanel').classList.remove('open');
+}
+
+function checkUpdate(){
+  const btn=document.getElementById('updateBtn');
+  const status=document.getElementById('updateStatus');
+  if(!('serviceWorker' in navigator)){
+    showToast('Service Worker非対応のブラウザです');return;
+  }
+  btn.textContent='確認中...';btn.disabled=true;
+  status.style.display='block';
+  status.textContent='サーバーの最新版を確認しています...';
+  status.style.color='var(--ink2)';
+  navigator.serviceWorker.ready.then(reg=>{
+    reg.active.postMessage('CHECK_UPDATE');
+    const handler=event=>{
+      navigator.serviceWorker.removeEventListener('message',handler);
+      btn.disabled=false;
+      if(event.data==='UPDATED'){
+        status.textContent='✓ 最新版に更新しました。リロードして適用してください。';
+        status.style.color='var(--ok)';
+        btn.textContent='リロードして適用';
+        btn.onclick=()=>location.reload(true);
+      } else {
+        status.textContent='✗ 更新失敗。ネットワークを確認してください。';
+        status.style.color='var(--accent)';
+        btn.textContent='アップデート確認';
+        btn.onclick=checkUpdate;
+      }
+    };
+    navigator.serviceWorker.addEventListener('message',handler);
+    setTimeout(()=>{
+      navigator.serviceWorker.removeEventListener('message',handler);
+      if(btn.disabled){
+        btn.disabled=false;btn.textContent='アップデート確認';btn.onclick=checkUpdate;
+        status.textContent='タイムアウト。ネットワークを確認してください。';
+        status.style.color='var(--accent)';
+      }
+    },10000);
+  }).catch(()=>{
+    btn.disabled=false;btn.textContent='アップデート確認';
+    status.textContent='再読み込みしてから再試行してください。';
+  });
 }
 
 // ══════════════════════════════════════
@@ -1364,6 +1419,14 @@ function setStatus(msg,type=''){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+
+
+
+
+
 </script>
 
 </body>
