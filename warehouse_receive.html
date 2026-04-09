@@ -416,8 +416,15 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="modal">
     <h3>シートから読み込む</h3>
     <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
-    <div class="form-row">
-      <script>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-ok" onclick="syncFromGas()">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
 // ══════════════════════════════════════
 //  CONST & STATE
 // ══════════════════════════════════════
@@ -875,16 +882,13 @@ function setStatus(msg,type=''){
   el.className=type;
   el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
 }
+
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-</script>s="spinner-sm"></span>${msg}`:msg;
-}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 </script>
+
 </body>
 </html>
