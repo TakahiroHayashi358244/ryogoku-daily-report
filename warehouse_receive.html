@@ -531,7 +531,6 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 
 <div id="toast"></div>
 <script>
-
 // ══════════════════════════════════════
 //  CONST & STATE
 // ══════════════════════════════════════
@@ -625,7 +624,6 @@ function getReasonValue(){
   if(sel.textContent.includes('自由入力'))return document.getElementById('reasonOtherText').value.trim();
   return sel.dataset.val||sel.textContent.trim();
 }
-
 
 // ══════════════════════════════════════
 //  送状バーコードスキャナー（QuaggaJS）
@@ -781,7 +779,6 @@ function resetJanShootBtn() {
   const btn = document.getElementById('janShootBtn');
   if (btn) { btn.textContent = '読み取る'; btn.disabled = false; }
 }
-
 
 // ══════════════════════════════════════
 //  PRODUCT SEARCH
@@ -1367,63 +1364,6 @@ function setStatus(msg,type=''){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-
-
-
-// ══════════════════════════════════════
-//  CSV
-// ══════════════════════════════════════
-
-function syncFromGasFiltered(){
-  const filter=document.querySelector('input[name="syncFilter"]:checked');
-  const mode=filter?filter.value:'all';
-  syncFromGas(mode);
-}
-function exportCSV(){
-  if(!history.length){showToast('登録データがありません');return;}
-  const header=['登録日時','到着日','時刻','旧送り状番号','返送送り状番号','受取人氏名','受取人住所','商品名・荷姿','返送理由','数量','ロケーション','ロケーション状態','返送済み','返送日','返送備考'];
-  const rows=history.map(i=>[
-    i.registeredAt,i.date,i.time,i.oldTracking,i.returnTracking||'',
-    i.recipient,i.recipientAddress||'',i.itemName,i.reason||'',i.qty,
-    i.location||'',i.locPending?'未定':'確定',
-    i.returned?'返送済':'未返送',i.returnedDate||'',i.returnNote||''
-  ]);
-  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
-  a.click();
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </script>
 
 </body>
