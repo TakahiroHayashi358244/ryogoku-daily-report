@@ -35,6 +35,13 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .history-table th{background:var(--surface2);padding:6px 8px;text-align:left;font-weight:700;font-size:0.75rem;color:var(--ink2);border-bottom:2px solid var(--border);white-space:nowrap}
 .history-table td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
 .history-table tr:hover{background:var(--surface2)}
+.history-summary{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.summary-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.sb-total{background:#e8e8e8;color:#444}
+.sb-unreturned{background:#fff3e0;color:#c47a00}
+.sb-returned{background:#e6f4ea;color:#2a7d4f}
+.sb-disposed{background:#f0f0f0;color:#888}
+.sb-overdue{background:#fff3f3;color:#bf3a2b}
 .history-table tr.row-overdue{background:#fff3f3}
 .history-table tr.row-returned{background:#f0faf5}
 .history-table tr.row-disposed{background:#f0f0f0;color:#999}
@@ -427,6 +434,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <button class="btn-csv" onclick="exportCSV()">CSV出力</button>
     </div>
   </div>
+  <div class="history-summary" id="historySummary"></div>
   <div class="search-bar">
     <input type="text" id="searchInput" placeholder="送り状番号 / 氏名 / 商品名で検索..."
            oninput="renderHistory()" onkeydown="if(event.key==='Enter')renderHistory()">
@@ -509,13 +517,13 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <div class="sync-filter-opts">
         <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
+        <labe<label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="overdue"> 返送期限切れ</label>
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-modal-cancel" onclick" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
       <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
     </div>
   </div>
@@ -1024,6 +1032,8 @@ function save(){localStorage.setItem('wh_history',JSON.stringify(history));}
 function renderHistory(syncFilter){
   const container=document.getElementById('historyList');
   if(!container)return;
+  // サマリー集計・表示
+  updateHistorySummary();
   const q=(document.getElementById('searchInput')||{}).value||'';
   let filtered=q?history.filter(item=>
     (item.oldTracking||'').includes(q)||(item.returnTracking||'').includes(q)||
@@ -1314,6 +1324,31 @@ function exportCSV(){
 }
 
 // ══════════════════════════════════════
+//  HISTORY SUMMARY
+// ══════════════════════════════════════
+function updateHistorySummary(){
+  const el=document.getElementById('historySummary');
+  if(!el||!history)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const total=history.length;
+  const returned=history.filter(r=>r.returned).length;
+  const disposed=history.filter(r=>r.disposed).length;
+  const unreturned=history.filter(r=>!r.returned&&!r.disposed).length;
+  const deadlineDays=CFG.deadlineDays||7;
+  const overdue=history.filter(r=>{
+    if(r.returned||r.disposed)return false;
+    if(!r.date)return false;
+    return new Date(new Date(r.date).getTime()+deadlineDays*86400000)<today;
+  }).length;
+  el.innerHTML=
+    '<span class="summary-badge sb-total">合計 '+total+'件</span>'+
+    '<span class="summary-badge sb-unreturned">未返送 '+unreturned+'件</span>'+
+    '<span class="summary-badge sb-returned">返送済 '+returned+'件</span>'+
+    '<span class="summary-badge sb-disposed">廃棄 '+disposed+'件</span>'+
+    (overdue>0?'<span class="summary-badge sb-overdue">期限切れ '+overdue+'件</span>':'');
+}
+
+// ══════════════════════════════════════
 //  UTILS
 // ══════════════════════════════════════
 function setStatus(msg,type=''){
@@ -1353,6 +1388,26 @@ function exportCSV(){
   a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
