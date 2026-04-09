@@ -22,6 +22,8 @@ main{max-width:680px;margin:0 auto;padding:16px 14px 48px;display:flex;flex-dire
 .form-row:last-child{margin-bottom:0}
 .form-row label{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;color:var(--ink2);text-transform:uppercase}
 .form-row label .req{color:var(--accent);margin-left:2px}
+.req-input{background:#fff0f3 !important;border-color:#f8bbd0 !important}
+.req-input:focus{border-color:var(--accent) !important;background:#fff5f7 !important}
 .form-row label .opt{font-weight:400;color:var(--ink2);font-size:0.68rem;margin-left:4px;text-transform:none}
 input[type=text],input[type=date],input[type=tel],select,textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:10px 12px;font-family:'Noto Sans JP',sans-serif;font-size:0.92rem;color:var(--ink);transition:border-color 0.15s;-webkit-appearance:none}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);background:#fff}
@@ -29,6 +31,12 @@ input.mono{font-family:'JetBrains Mono',monospace;font-size:1rem;letter-spacing:
 input.filled{border-color:var(--ok);background:#f0faf5}
 .row2{display:flex;gap:10px}
 .row2>*{flex:1}
+/* 履歴テーブル */
+.history-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.history-table th{background:var(--surface2);padding:6px 8px;text-align:left;font-weight:700;font-size:0.75rem;color:var(--ink2);border-bottom:2px solid var(--border);white-space:nowrap}
+.history-table td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.history-table tr:hover{background:var(--surface2)}
+.history-table tr.row-overdue{background:#fff3f3}
 /* JAN Scanner */
 .scan-wrap{display:flex;gap:8px;align-items:stretch}
 .scan-wrap input{flex:1}
@@ -137,6 +145,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .h-loc.pending{background:var(--warn)}
 .h-badge-ret{display:inline-block;background:var(--returned);color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;margin-right:4px}
 .h-badge-unret{display:inline-block;background:var(--accent);color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;margin-right:4px}
+.badge-disposed{display:inline-block;background:#757575;color:#fff;padding:1px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;cursor:pointer}
+.badge-dispose-btn{display:inline-block;color:var(--ink2);font-size:0.72rem;cursor:pointer;padding:1px 4px;border-radius:4px;border:1px solid var(--border)}
 .h-deadline{font-size:0.7rem;font-weight:700;padding:1px 8px;border-radius:4px;margin-left:4px;display:inline-block}
 .h-deadline.over{background:var(--accent);color:#fff}
 .h-deadline.soon{background:var(--warn);color:#fff}
@@ -208,7 +218,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="row2">
       <div class="form-row">
         <label>到着日<span class="req">*</span></label>
-        <input type="date" id="arrivalDate">
+        <input type="date" id="arrivalDate" class="req-input">
       </div>
       <div class="form-row">
         <label>登録時刻</label>
@@ -217,7 +227,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>旧送り状番号<span class="req">*</span></label>
-      <input type="tel" class="mono" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
+      <input type="tel" class="mono req-input" id="oldTrackingNo" placeholder="元の発送時の番号" maxlength="30">
     </div>
     <div class="form-row">
       <label>返送時の送り状番号<span class="opt">任意</span></label>
@@ -225,7 +235,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
-      <input type="text" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
+      <input type="text" class="req-input" id="recipientName" placeholder="例: 山田 太郎 / ○○株式会社">
     </div>
     <div class="form-row">
       <label>受取人住所<span class="opt">任意</span></label>
@@ -233,7 +243,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>商品名・荷姿<span class="req">*</span></label>
-      <input type="text" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
+      <input type="text" class="req-input" id="itemName" placeholder="例: 化粧品 / 衣類 / 精密機器">
     </div>
     <div class="form-row">
       <label>返送理由<span class="opt">任意</span></label>
@@ -253,7 +263,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>数量<span class="req">*</span></label>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="changeQty(-1)" style="width:38px;height:38px;border:1.5px solid var(--border);border-radius:7px;font-size:1.1rem;cursor:pointer;background:var(--surface2)">−</button>
-        <input type="tel" id="qtyInput" value="1" style="width:70px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700">
+        <input type="tel" id="qtyInput" value="1" class="req-input" class="req-input" style="width:70px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700">
         <button onclick="changeQty(1)" style="width:38px;height:38px;border:1.5px solid var(--border);border-radius:7px;font-size:1.1rem;cursor:pointer;background:var(--surface2)">＋</button>
       </div>
     </div>
@@ -407,23 +417,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <h3>シートから読み込む</h3>
     <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
     <div class="form-row">
-      <label>読み込む対象</label>
-      <select id="syncFilter">
-        <option value="all">全件</option>
-        <option value="unreturned">未返送のみ</option>
-        <option value="returned">返送済みのみ</option>
-      </select>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-modal-ok" onclick="syncFromGas()">読み込む</button>
-      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
-    </div>
-  </div>
-</div>
-</div>
-<div id="toast"></div>
-
-<script>
+      <script>
 // ══════════════════════════════════════
 //  CONST & STATE
 // ══════════════════════════════════════
@@ -701,18 +695,24 @@ function resetForm(){
 // ══════════════════════════════════════
 function save(){localStorage.setItem('wh_history',JSON.stringify(history));}
 function renderHistory(){
-  const tbody=document.getElementById('historyBody');
-  if(!tbody)return;
-  if(!history.length){
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink2)">登録データなし</td></tr>';
+  const container=document.getElementById('historyList');
+  if(!container)return;
+  const q=(document.getElementById('searchInput')||{}).value||'';
+  const filtered=q?history.filter(item=>
+    (item.oldTracking||'').includes(q)||(item.returnTracking||'').includes(q)||
+    (item.recipient||'').includes(q)||(item.itemName||'').includes(q)
+  ):history;
+  if(!filtered.length){
+    container.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink2)">登録データなし</div>';
     return;
   }
-  tbody.innerHTML=history.map((item,i)=>{
+  const rows=filtered.map((item)=>{
+    const i=history.indexOf(item);
     const deadline=item.date?new Date(new Date(item.date).getTime()+CFG.deadlineDays*86400000):null;
     const today=new Date();today.setHours(0,0,0,0);
-    const isOverdue=deadline&&!item.returned&&deadline<today;
+    const isOverdue=deadline&&!item.returned&&!item.disposed&&deadline<today;
     const daysLeft=deadline?Math.ceil((deadline-today)/86400000):null;
-    const urgency=isOverdue?'⚠ 期限超過':(daysLeft<=3&&!item.returned)?`残${daysLeft}日`:'';
+    const urgency=isOverdue?'⚠ 期限超過':(daysLeft!==null&&daysLeft<=3&&!item.returned&&!item.disposed)?`残${daysLeft}日`:'';
     return `<tr class="${isOverdue?'row-overdue':''}" onclick="openEditModal(${i})">
       <td>${item.date||''}</td>
       <td class="mono" style="font-size:0.75rem">${esc(item.oldTracking)}</td>
@@ -721,9 +721,17 @@ function renderHistory(){
       <td>${item.qty}</td>
       <td>${item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>'}</td>
       <td><span class="${item.returned?'badge-returned':'badge-unreturned'}" onclick="event.stopPropagation();toggleReturn(${i})">${item.returned?'返送済':'📦 未返送'}</span></td>
+      <td><span class="${item.disposed?'badge-disposed':'badge-dispose-btn'}" onclick="event.stopPropagation();toggleDispose(${i})">${item.disposed?'🗑 廃棄済':'廃棄'}</span></td>
       <td style="color:var(--accent);font-size:0.75rem;font-weight:700">${urgency}</td>
     </tr>`;
   }).join('');
+  container.innerHTML=`<table class="history-table">
+    <thead><tr>
+      <th>到着日</th><th>旧送状番号</th><th>受取人</th><th>商品名</th>
+      <th>数量</th><th>ロケーション</th><th>返送</th><th>廃棄</th><th>期限</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 // ══════════════════════════════════════
@@ -786,6 +794,17 @@ function toggleReturn(i){
     save();renderHistory();showToast('未返送に戻しました');
   }else{
     openReturnModal(i);
+  }
+}
+function toggleDispose(i){
+  if(!history[i])return;
+  if(history[i].disposed){
+    history[i].disposed=false;
+    save();renderHistory();showToast('廃棄を取り消しました');
+  }else{
+    if(!confirm('この商品を廃棄済みにしますか？'))return;
+    history[i].disposed=true;history[i].disposedDate=new Date().toISOString().slice(0,10);
+    save();renderHistory();showToast('廃棄済みにしました 🗑');
   }
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -855,6 +874,12 @@ function setStatus(msg,type=''){
   const el=document.getElementById('status');if(!el)return;
   el.className=type;
   el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+</script>s="spinner-sm"></span>${msg}`:msg;
 }
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
