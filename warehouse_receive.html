@@ -248,15 +248,15 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
-      <input type="text" class="req-input" id="recipientName" autocomplete="off" placeholder="例: 山田 太郎 / ○○株式会社">
+      <input type="text" class="req-input" id="recipientName" autocomplete="off" inputmode="text" placeholder="例: 山田 太郎 / ○○株式会社">
     </div>
     <div class="form-row">
       <label>受取人住所<span class="opt">任意</span></label>
-      <input type="text" id="recipientAddress" autocomplete="off" placeholder="例: 東京都渋谷区〇〇1-2-3">
+      <input type="text" id="recipientAddress" autocomplete="off" inputmode="text" placeholder="例: 東京都渋谷区〇〇1-2-3">
     </div>
     <div class="form-row">
       <label>商品名・荷姿<span class="req">*</span></label>
-      <input type="text" class="req-input" id="itemName" autocomplete="off" placeholder="例: 化粧品 / 衣類 / 精密機器">
+      <input type="text" class="req-input" id="itemName" autocomplete="off" inputmode="text" placeholder="例: 化粧品 / 衣類 / 精密機器">
     </div>
     <div class="form-row">
       <label>返送理由<span class="opt">任意</span></label>
@@ -269,7 +269,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
         <div class="reason-chip" onclick="toggleReason(this,'自由入力')">その他（自由入力）</div>
       </div>
       <div class="reason-other" id="reasonOther">
-        <input type="text" id="reasonOtherText" placeholder="返送理由を入力">
+        <input type="text" id="reasonOtherText" inputmode="text" placeholder="返送理由を入力">
       </div>
     </div>
     <div class="form-row">
@@ -387,8 +387,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="modal-meta" id="editModalMeta"></div>
     <div class="form-row"><label>旧送り状番号</label><input type="tel" class="mono" id="editOldTracking" autocomplete="off"></div>
     <div class="form-row"><label>返送送り状番号</label><input type="tel" class="mono" id="editReturnTracking" autocomplete="off"></div>
-    <div class="form-row"><label>受取人氏名</label><input type="text" id="editRecipient" autocomplete="off"></div>
-    <div class="form-row"><label>商品名・荷姿</label><input type="text" id="editItemName" autocomplete="off"></div>
+    <div class="form-row"><label>受取人氏名</label><input type="text" id="editRecipient" autocomplete="off" inputmode="text"></div>
+    <div class="form-row"><label>商品名・荷姿</label><input type="text" id="editItemName" autocomplete="off" inputmode="text"></div>
     <div class="form-row"><label>返送理由</label><input type="text" id="editReason"></div>
     <div class="form-row"><label>数量</label><input type="tel" id="editQty"></div>
     <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" autocomplete="off" placeholder="例: A-01-03"></div>
@@ -481,7 +481,35 @@ window.onload=()=>{
   renderHistory();
   // バーコードスキャナ対応: Enter後に次の欄へフォーカス移動＋ソフトキーボード強制表示
   setupScannerEnterHandlers();
+  setupTouchFocusHandlers();
 };
+
+function forceKeyboard(el) {
+  // iOSでソフトキーボードを強制表示するトリック
+  el.setAttribute('readonly', '');
+  el.focus();
+  setTimeout(() => {
+    el.removeAttribute('readonly');
+    el.focus();
+  }, 30);
+}
+
+function setupTouchFocusHandlers() {
+  // テキスト入力欄をタップしたときソフトキーボードを強制表示
+  const textFields = ['recipientName','recipientAddress','itemName',
+                      'reasonOtherText','editRecipient','editItemName',
+                      'editReason','returnNote','locInput2','editLocation'];
+  textFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchend', function(e) {
+      if (document.activeElement !== this) {
+        e.preventDefault();
+        forceKeyboard(this);
+      }
+    }, {passive: false});
+  });
+}
 
 function setupScannerEnterHandlers() {
   // スキャナ入力の流れ: 旧送状番号 → 返送番号 → 氏名 → 商品名
