@@ -330,10 +330,19 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="card-head"><span class="step">2</span>ロケーション</div>
   <div class="card-body">
     <div class="form-row">
-      <label>ロケーション番号<span class="opt">後で追加可</span></label>
+      <label>ロケーション番号<span class="opt">任意</span></label>
       <div class="loc-wrap">
         <input type="text" class="mono" id="locationInput" autocomplete="off" placeholder="例: A-01-03">
-        <div class="loc-pending" onclick="setPending()">⏳ 後で</div>
+        <button class="btn-barcode" id="scanBtn_loc" onclick="toggleTrackingScanner('loc')">📷</button>
+      </div>
+      <div class="tracking-scanner" id="trackingScanner_loc">
+        <div id="trackingInteractive_loc"></div>
+        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
+        <div class="tracking-scan-bar">
+          <span class="tracking-scan-hint">バーコードを枠内に合わせてボタンを押す</span>
+          <button class="btn-scan-cancel" onclick="stopTrackingScanner()">✕</button>
+          <button class="btn-scan-shoot" onclick="shootTrackingBarcode('loc')">読み取る</button>
+        </div>
       </div>
     </div>
     <div id="locPendingNote" style="display:none;font-size:0.75rem;color:var(--warn);margin-top:4px;font-weight:700">
@@ -345,14 +354,14 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 <!-- STEP 3: JANコード検索（オプション） -->
 <div class="card">
   <div class="card-head">
-    <span class="step">3</span>JANコード検索
+    <span class="step">3</span>JAN検索
     <span style="font-size:0.75rem;font-weight:400;color:#aaa;margin-left:6px">任意 — ヒットすれば商品名に反映</span>
 
   </div>
   <div id="janPanel">
     <div class="card-body">
       <div class="form-row" style="margin:0">
-        <label>JANコード<span class="opt">スキャンまたは手入力</span></label>
+        <label>JAN検索<span class="opt">スキャンまたは手入力</span></label>
         <div class="scan-wrap">
           <input type="tel" class="mono" id="janInput" placeholder="4901234567890" maxlength="14"
                  oninput="onJanInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchProduct()}">
@@ -361,6 +370,11 @@ input.filled{border-color:var(--ok);background:#f0faf5}
         <div id="scanner-container">
           <div id="interactive"></div>
           <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
+          <div class="tracking-scan-bar">
+            <span class="tracking-scan-hint">バーコードを枠内に合わせてボタンを押す</span>
+            <button class="btn-scan-cancel" onclick="stopCamera()">✕</button>
+            <button class="btn-scan-shoot" id="janShootBtn" onclick="shootJanBarcode()">読み取る</button>
+          </div>
         </div>
       </div>
       <div id="status"></div>
@@ -489,9 +503,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <h3>シートから読み込む</h3>
     <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
     <div class="sync-filter">
-      <label class="sync-filter-label">読み込み対象</label>
-      <div class="sync-filter-opts">
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
+              <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
@@ -678,7 +690,7 @@ function startTrackingScanner(which) {
 
 function shootTrackingBarcode(which) {
   // 現在のフレームを1回だけ解析
-  const fieldId = which === 'old' ? 'oldTrackingNo' : 'returnTrackingNo';
+  const fieldId = which==='old'?'oldTrackingNo':which==='return'?'returnTrackingNo':'locationInput';
   const btn = document.querySelector('.btn-scan-shoot');
   if (btn) { btn.textContent = '解析中...'; btn.disabled = true; }
 
@@ -742,13 +754,43 @@ function startCamera(){
     document.querySelectorAll('#interactive canvas').forEach(c=>c.style.cssText='display:none!important');
     Quagga.start();scanning=true;
   });
-  Quagga.onDetected(function(data){const code=data.codeResult.code;if(code===lastCode)return;lastCode=code;document.getElementById('janInput').value=code;stopCamera();searchProduct();});
+  // 自動検出OFF — shootJanBarcode()で手動読み取り
 }
 function stopCamera(){
   if(scanning){Quagga.stop();scanning=false;}
   document.getElementById('scanner-container').classList.remove('visible');
   const btn=document.getElementById('camBtn');btn.classList.remove('active');btn.textContent='📷';lastCode=null;
 }
+function shootJanBarcode() {
+  const btn = document.getElementById('janShootBtn');
+  if (btn) { btn.textContent = '解析中...'; btn.disabled = true; }
+  const video = document.querySelector('#interactive video');
+  if (!video) { showToast('カメラ未起動'); resetJanShootBtn(); return; }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  Quagga.decodeSingle({
+    decoder: { readers: ['ean_reader','ean_8_reader','upc_reader','upc_e_reader',
+                         'code_128_reader','code_39_reader','i2of5_reader'] },
+    src: canvas.toDataURL('image/jpeg', 0.9)
+  }, function(result) {
+    resetJanShootBtn();
+    if (result && result.codeResult && result.codeResult.code) {
+      document.getElementById('janInput').value = result.codeResult.code;
+      stopCamera();
+      searchProduct();
+    } else {
+      showToast('読み取れませんでした。もう一度試してください');
+    }
+  });
+}
+
+function resetJanShootBtn() {
+  const btn = document.getElementById('janShootBtn');
+  if (btn) { btn.textContent = '読み取る'; btn.disabled = false; }
+}
+
 
 // ══════════════════════════════════════
 //  PRODUCT SEARCH
@@ -1297,29 +1339,6 @@ function exportCSV(){
   a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
 }
-
-// ══════════════════════════════════════
-//  UTILS
-// ══════════════════════════════════════
-function setStatus(msg,type=''){
-  const el=document.getElementById('status');if(!el)return;
-  el.className=type;
-  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
-}
-
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-
-
-
-
-
-
-
-
-
 
 
 </script>
