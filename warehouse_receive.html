@@ -714,7 +714,7 @@ async function sendToGasUpdate(entry){
   const gasUrl=CFG.gasUrl||GAS_DEFAULT;
   if(!gasUrl)return;
   try{
-    await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({
+    const body=JSON.stringify({
       mode:'update',
       registeredAt:entry.registeredAt||'',
       date:entry.date||'', time:entry.time||'',
@@ -724,7 +724,8 @@ async function sendToGasUpdate(entry){
       location:entry.location||'', locPending:entry.locPending||false,
       returned:entry.returned||false, returnedDate:entry.returnedDate||'', returnNote:entry.returnNote||'',
       disposed:entry.disposed||false, disposedDate:entry.disposedDate||''
-    })});
+    });
+    await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body,keepalive:true});
   }catch(e){console.warn('GAS update error:',e);}
 }
 function resetForm(){
@@ -747,14 +748,26 @@ function resetForm(){
 //  HISTORY & STORAGE
 // ══════════════════════════════════════
 function save(){localStorage.setItem('wh_history',JSON.stringify(history));}
-function renderHistory(){
+function renderHistory(syncFilter){
   const container=document.getElementById('historyList');
   if(!container)return;
   const q=(document.getElementById('searchInput')||{}).value||'';
-  const filtered=q?history.filter(item=>
+  let filtered=q?history.filter(item=>
     (item.oldTracking||'').includes(q)||(item.returnTracking||'').includes(q)||
     (item.recipient||'').includes(q)||(item.itemName||'').includes(q)
   ):history;
+  // シート読込時のフィルターを適用
+  if(syncFilter&&syncFilter!=='all'){
+    const today=new Date();today.setHours(0,0,0,0);
+    if(syncFilter==='unreturned') filtered=filtered.filter(r=>!r.returned&&!r.disposed);
+    else if(syncFilter==='returned') filtered=filtered.filter(r=>r.returned);
+    else if(syncFilter==='disposed') filtered=filtered.filter(r=>r.disposed);
+    else if(syncFilter==='overdue') filtered=filtered.filter(r=>{
+      if(r.returned||r.disposed)return false;
+      if(!r.date)return false;
+      return new Date(new Date(r.date).getTime()+CFG.deadlineDays*86400000)<today;
+    });
+  }
   if(!filtered.length){
     container.innerHTML='<div style="text-align:center;padding:20px;color:var(--ink2)">登録データなし</div>';
     return;
@@ -933,21 +946,28 @@ async function syncFromGas(filterMode){
         id:           Date.now()+Math.random()
       };
     });
-    const today=new Date(); today.setHours(0,0,0,0);
-    if(filterMode==='unreturned') rows=rows.filter(r=>!r.returned&&!r.disposed);
-    else if(filterMode==='returned') rows=rows.filter(r=>r.returned);
-    else if(filterMode==='disposed') rows=rows.filter(r=>r.disposed);
-    else if(filterMode==='overdue') rows=rows.filter(r=>{
-      if(r.returned||r.disposed)return false;
-      if(!r.date)return false;
-      const deadline=new Date(new Date(r.date).getTime()+CFG.deadlineDays*86400000);
-      return deadline<today;
-    });
+    // 全件をhistoryに保存（localStorageも全件）
     history=rows;
     save();
+    // フィルターは表示用変数に反映（searchInputで制御）
     const si=document.getElementById('searchInput');if(si)si.value='';
-    renderHistory();
-    showToast(`${history.length}件読み込みました ✓`);
+    // filterModeをrenderHistoryに渡して表示だけ絞り込む
+    renderHistory(filterMode);
+    const total=rows.length;
+    const filtered=filterMode&&filterMode!=='all'?
+      (() => {
+        const today=new Date();today.setHours(0,0,0,0);
+        if(filterMode==='unreturned') return rows.filter(r=>!r.returned&&!r.disposed).length;
+        if(filterMode==='returned')   return rows.filter(r=>r.returned).length;
+        if(filterMode==='disposed')   return rows.filter(r=>r.disposed).length;
+        if(filterMode==='overdue')    return rows.filter(r=>{
+          if(r.returned||r.disposed)return false;
+          if(!r.date)return false;
+          return new Date(new Date(r.date).getTime()+CFG.deadlineDays*86400000)<today;
+        }).length;
+        return total;
+      })() : total;
+    showToast(`${total}件読み込み（表示: ${filtered}件）✓`);
   }catch(e){showToast('読み込みエラー: '+e.message);}
 }
 
