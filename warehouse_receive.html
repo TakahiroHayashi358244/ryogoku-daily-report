@@ -29,8 +29,7 @@ input[type=text],input[type=date],input[type=tel],select,textarea{width:100%;bac
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);background:#fff}
 input.mono{font-family:'JetBrains Mono',monospace;font-size:1rem;letter-spacing:0.06em}
 input.filled{border-color:var(--ok);background:#f0faf5}
-.row2{display:flex;gap:10px}
-.row2>*{flex:1}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 /* 履歴テーブル */
 .history-table{width:100%;border-collapse:collapse;font-size:0.82rem}
 .history-table th{background:var(--surface2);padding:6px 8px;text-align:left;font-weight:700;font-size:0.75rem;color:var(--ink2);border-bottom:2px solid var(--border);white-space:nowrap}
@@ -277,7 +276,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>数量<span class="req">*</span></label>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="changeQty(-1)" style="width:38px;height:38px;border:1.5px solid var(--border);border-radius:7px;font-size:1.1rem;cursor:pointer;background:var(--surface2)">−</button>
-        <input type="tel" id="qtyInput" value="1" class="req-input" class="req-input" style="width:70px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700">
+        <input type="tel" id="qtyInput" value="1" class="req-input" style="width:70px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700">
         <button onclick="changeQty(1)" style="width:38px;height:38px;border:1.5px solid var(--border);border-radius:7px;font-size:1.1rem;cursor:pointer;background:var(--surface2)">＋</button>
       </div>
     </div>
@@ -464,7 +463,9 @@ window._ocrTokens=[];
 //  INIT
 // ══════════════════════════════════════
 window.onload=()=>{
-  document.getElementById('arrivalDate').value=new Date().toISOString().slice(0,10);
+  const _d=new Date();
+  const _tz=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
+  document.getElementById('arrivalDate').value=_tz;
   updateTime(); setInterval(updateTime,30000);
   if(CFG.yahooId) document.getElementById('yahooId').value=CFG.yahooId;
   if(CFG.gasUrl)  document.getElementById('gasUrl').value=CFG.gasUrl;
