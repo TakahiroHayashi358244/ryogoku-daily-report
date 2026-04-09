@@ -197,6 +197,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .sync-filter-opts{display:flex;flex-direction:column;gap:8px}
 .sync-opt{display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer;padding:6px 0}
 .sync-opt input{width:18px;height:18px;cursor:pointer;accent-color:var(--ok)}
+.btn-edit-action.btn-undo{background:#ffeaea;color:#c0392b;border:1.5px solid #f5b7b1}
 </style>
 </head>
 <body>
@@ -435,8 +436,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" autocomplete="off" placeholder="例: A-01-03"></div>
     <div class="edit-action-btns">
       <button class="btn-edit-action btn-loc" onclick="editOpenLoc()">📍 ロケーション修正</button>
-      <button class="btn-edit-action btn-ret" onclick="editOpenReturn()">📦 返送済みにする</button>
-      <button class="btn-edit-action btn-dis" onclick="editDoDispose()">🗑 廃棄</button>
+      <button id="editRetBtn" class="btn-edit-action btn-ret" onclick="editToggleReturn()">📦 返送済みにする</button>
+      <button id="editDisBtn" class="btn-edit-action btn-dis" onclick="editToggleDispose()">🗑 廃棄</button>
     </div>
     <div class="modal-btns">
       <button class="btn-modal-ok" onclick="saveEdit()">保存</button>
@@ -1026,11 +1027,7 @@ function openEditModal(i){
   document.getElementById('editReason').value=item.reason||'';
   document.getElementById('editQty').value=item.qty||1;
   document.getElementById('editLocation').value=item.location||'';
-  // アクションボタンの状態制御
-  const retBtn=document.querySelector('.btn-ret');
-  const disBtn=document.querySelector('.btn-dis');
-  if(retBtn) retBtn.style.display=item.returned?'none':'block';
-  if(disBtn) disBtn.style.display=item.disposed?'none':'block';
+  updateEditFlagBtns(item);
   document.getElementById('editModalMeta').textContent=`${item.date||''} / ${item.recipient||''} / ${item.itemName||''}`;
   document.getElementById('editModal').classList.add('open');
 }
@@ -1044,6 +1041,54 @@ function editOpenReturn(){
   openReturnModal(i);
   closeModal('editModal');
 }
+function updateEditFlagBtns(item) {
+  const retBtn = document.getElementById('editRetBtn');
+  const disBtn = document.getElementById('editDisBtn');
+  if (retBtn) {
+    if (item.returned) { retBtn.textContent='↩ 返送取消'; retBtn.className='btn-edit-action btn-undo'; }
+    else { retBtn.textContent='📦 返送済みにする'; retBtn.className='btn-edit-action btn-ret'; }
+  }
+  if (disBtn) {
+    if (item.disposed) { disBtn.textContent='↩ 廃棄取消'; disBtn.className='btn-edit-action btn-undo'; }
+    else { disBtn.textContent='🗑 廃棄'; disBtn.className='btn-edit-action btn-dis'; }
+  }
+}
+
+function editToggleReturn(){
+  const i=parseInt(document.getElementById('editIndex').value);
+  if(!history[i])return;
+  if(history[i].returned){
+    // 返送取消
+    if(!confirm('返送済みを取り消しますか？'))return;
+    history[i].returned=false;
+    history[i].returnedDate='';
+    history[i].returnNote='';
+    save();renderHistory();sendToGasUpdate(history[i]);
+    updateEditFlagBtns(history[i]);
+    showToast('返送を取り消しました');
+  } else {
+    // 返送済みにする → returnModalを開く
+    editOpenReturn();
+  }
+}
+
+function editToggleDispose(){
+  const i=parseInt(document.getElementById('editIndex').value);
+  if(!history[i])return;
+  if(history[i].disposed){
+    // 廃棄取消
+    if(!confirm('廃棄済みを取り消しますか？'))return;
+    history[i].disposed=false;
+    history[i].disposedDate='';
+    save();renderHistory();sendToGasUpdate(history[i]);
+    updateEditFlagBtns(history[i]);
+    showToast('廃棄を取り消しました');
+  } else {
+    // 廃棄する
+    editDoDispose();
+  }
+}
+
 function editDoDispose(){
   const i=parseInt(document.getElementById('editIndex').value);
   if(!history[i])return;
@@ -1265,6 +1310,13 @@ function setStatus(msg,type=''){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+
+
+
+
 
 
 
