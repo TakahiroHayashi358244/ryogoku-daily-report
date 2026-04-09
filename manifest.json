@@ -1,0 +1,17 @@
+{
+  "name": "Return Manager",
+  "short_name": "返品管理",
+  "description": "Gworker 両国返品管理システム",
+  "start_url": "/ryogoku-daily-report/warehouse_receive.html",
+  "display": "standalone",
+  "background_color": "#1a1714",
+  "theme_color": "#1a1714",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://takahirohayashi358244.github.io/ryogoku-daily-report/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
