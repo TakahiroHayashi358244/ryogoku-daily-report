@@ -37,6 +37,22 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .history-table tr:hover{background:var(--surface2)}
 .history-table tr.row-overdue{background:#fff3f3}
 .history-table tr.row-returned{background:#f0faf5}
+/* 送状バーコードスキャナー */
+.tracking-input-wrap{display:flex;gap:8px;align-items:center}
+.tracking-input-wrap input{flex:1;min-width:0}
+.btn-barcode{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:0 13px;height:44px;font-size:1.1rem;cursor:pointer;flex-shrink:0;transition:background 0.15s;white-space:nowrap}
+.btn-barcode.active{background:var(--accent)}
+.tracking-scanner{display:none;position:relative;background:#000;border-radius:8px;overflow:hidden;margin-top:8px}
+.tracking-scanner.visible{display:block}
+.tracking-scanner video{width:100%;height:200px;display:block;object-fit:cover}
+.tracking-scanner canvas{display:none !important}
+.tracking-scanner .scan-overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.tracking-scanner .scan-box{width:90%;height:56px;border:2px solid rgba(255,255,255,0.9);border-radius:6px;position:relative;box-shadow:0 0 0 9999px rgba(0,0,0,0.45)}
+.tracking-scanner .scan-line{position:absolute;left:4px;right:4px;height:2px;background:var(--accent2);box-shadow:0 0 6px var(--accent2);animation:sl 1.8s ease-in-out infinite}
+.tracking-scan-bar{display:flex;gap:8px;padding:8px;background:#111;align-items:center}
+.tracking-scan-hint{color:#aaa;font-size:0.75rem;flex:1}
+.btn-scan-shoot{background:var(--accent2);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:0.9rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-scan-cancel{background:none;border:1.5px solid #555;color:#aaa;border-radius:7px;padding:9px 12px;font-size:0.85rem;cursor:pointer}
 /* JAN Scanner */
 .scan-wrap{display:flex;gap:8px;align-items:stretch}
 .scan-wrap input{flex:1}
@@ -240,11 +256,35 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>旧送り状番号<span class="req">*</span></label>
-      <input type="tel" class="mono req-input" id="oldTrackingNo" autocomplete="off" placeholder="元の発送時の番号" maxlength="30">
+      <div class="tracking-input-wrap">
+        <input type="tel" class="mono req-input" id="oldTrackingNo" autocomplete="off" placeholder="元の発送時の番号" maxlength="30">
+        <button class="btn-barcode" id="scanBtn_old" onclick="toggleTrackingScanner('old')">📷</button>
+      </div>
+      <div class="tracking-scanner" id="trackingScanner_old">
+        <div id="trackingInteractive_old"></div>
+        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
+        <div class="tracking-scan-bar">
+          <span class="tracking-scan-hint">バーコードを枠内に合わせてボタンを押す</span>
+          <button class="btn-scan-cancel" onclick="stopTrackingScanner()">✕</button>
+          <button class="btn-scan-shoot" onclick="shootTrackingBarcode('old')">読み取る</button>
+        </div>
+      </div>
     </div>
     <div class="form-row">
       <label>返送時の送り状番号<span class="opt">任意</span></label>
-      <input type="tel" class="mono" id="returnTrackingNo" autocomplete="off" placeholder="返送に使用した伝票番号" maxlength="30">
+      <div class="tracking-input-wrap">
+        <input type="tel" class="mono" id="returnTrackingNo" autocomplete="off" placeholder="返送に使用した伝票番号" maxlength="30">
+        <button class="btn-barcode" id="scanBtn_return" onclick="toggleTrackingScanner('return')">📷</button>
+      </div>
+      <div class="tracking-scanner" id="trackingScanner_return">
+        <div id="trackingInteractive_return"></div>
+        <div class="scan-overlay"><div class="scan-box"><div class="scan-line"></div></div></div>
+        <div class="tracking-scan-bar">
+          <span class="tracking-scan-hint">バーコードを枠内に合わせてボタンを押す</span>
+          <button class="btn-scan-cancel" onclick="stopTrackingScanner()">✕</button>
+          <button class="btn-scan-shoot" onclick="shootTrackingBarcode('return')">読み取る</button>
+        </div>
+      </div>
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
@@ -390,70 +430,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row"><label>受取人氏名</label><input type="text" id="editRecipient" autocomplete="off" inputmode="text"></div>
     <div class="form-row"><label>商品名・荷姿</label><input type="text" id="editItemName" autocomplete="off" inputmode="text"></div>
     <div class="form-row"><label>返送理由</label><input type="text" id="editReason"></div>
-    <div class="form-row"><label>数量</label><input type="tel" id="editQty"></div>
-    <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" autocomplete="off" placeholder="例: A-01-03"></div>
-    <div class="edit-action-btns">
-      <button class="btn-edit-action btn-loc" onclick="editOpenLoc()">📍 ロケーション修正</button>
-      <button class="btn-edit-action btn-ret" onclick="editOpenReturn()">📦 返送済みにする</button>
-      <button class="btn-edit-action btn-dis" onclick="editDoDispose()">🗑 廃棄</button>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-modal-ok" onclick="saveEdit()">保存</button>
-      <button class="btn-modal-cancel" onclick="closeModal('editModal')">キャンセル</button>
-    </div>
-  </div>
-</div>
-<!-- ロケーションモーダル -->
-<div class="modal-bg" id="locModal">
-  <div class="modal">
-    <h3>ロケーション追加</h3>
-    <input type="hidden" id="locIndex">
-    <div class="modal-meta" id="locModalMeta"></div>
-    <div class="form-row"><label>ロケーション番号</label><input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="A-01-03"></div>
-    <div class="modal-btns">
-      <button class="btn-modal-ok" onclick="saveLocation()">登録</button>
-      <button class="btn-modal-cancel" onclick="closeModal('locModal')">キャンセル</button>
-    </div>
-  </div>
-</div>
-<!-- 返送モーダル -->
-<div class="modal-bg" id="returnModal">
-  <div class="modal">
-    <h3>返送済みにする</h3>
-    <input type="hidden" id="returnIndex">
-    <div class="modal-meta" id="returnModalMeta"></div>
-    <div class="form-row"><label>返送日</label><input type="date" id="returnDate"></div>
-    <div class="form-row"><label>返送先・備考<span class="opt">任意</span></label><input type="text" id="returnNote" placeholder="例: ○○倉庫へ返送"></div>
-    <div class="modal-btns">
-      <button class="btn-modal-ok" style="background:var(--returned)" onclick="saveReturn()">返送済みにする</button>
-      <button class="btn-modal-cancel" onclick="closeModal('returnModal')">キャンセル</button>
-    </div>
-  </div>
-</div>
-<!-- シート読込モーダル -->
-<div class="modal-bg" id="syncModal">
-  <div class="modal">
-    <h3>シートから読み込む</h3>
-    <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
-    <div class="sync-filter">
-      <label class="sync-filter-label">読み込み対象</label>
-      <div class="sync-filter-opts">
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
-        <label class="sync-opt"><input type="radio" name="syncFilter" value="overdue"> 返送期限切れ</label>
-      </div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
-      <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-<script>
+    <div class="form-row"><label>数量</label><input type="tel" id="edi<script>
 
 // ══════════════════════════════════════
 //  CONST & STATE
@@ -575,6 +552,103 @@ function getReasonValue(){
   if(!sel)return'';
   if(sel.textContent.includes('自由入力'))return document.getElementById('reasonOtherText').value.trim();
   return sel.dataset.val||sel.textContent.trim();
+}
+
+
+// ══════════════════════════════════════
+//  送状バーコードスキャナー（QuaggaJS）
+// ══════════════════════════════════════
+let trackingScanActive = null;
+
+function toggleTrackingScanner(which) {
+  if (trackingScanActive === which) {
+    stopTrackingScanner();
+  } else {
+    if (trackingScanActive) stopTrackingScanner();
+    startTrackingScanner(which);
+  }
+}
+
+function startTrackingScanner(which) {
+  const fieldId   = which === 'old' ? 'oldTrackingNo' : 'returnTrackingNo';
+  const container = document.getElementById('trackingScanner_' + which);
+  const target    = document.getElementById('trackingInteractive_' + which);
+  const btn       = document.getElementById('scanBtn_' + which);
+
+  // カメラ起動時に入力欄をクリア（誤認識のやり直しに対応）
+  document.getElementById(fieldId).value = '';
+
+  container.classList.add('visible');
+  btn.classList.add('active');
+  btn.textContent = '⏹';
+  trackingScanActive = which;
+
+  Quagga.init({
+    inputStream: {
+      name: 'Live', type: 'LiveStream', target: target,
+      constraints: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
+    },
+    decoder: {
+      readers: ['code_128_reader','code_39_reader','ean_reader','ean_8_reader',
+                'upc_reader','upc_e_reader','i2of5_reader','codabar_reader']
+    }
+  }, function(err) {
+    if (err) { showToast('カメラ起動失敗'); stopTrackingScanner(); return; }
+    target.querySelectorAll('canvas').forEach(function(c){ c.style.cssText='display:none!important'; });
+    Quagga.start();
+  });
+  // 自動検出はOFF — 手動読み取りボタンで shootTrackingBarcode() を呼ぶ
+}
+
+function shootTrackingBarcode(which) {
+  // 現在のフレームを1回だけ解析
+  const fieldId = which === 'old' ? 'oldTrackingNo' : 'returnTrackingNo';
+  const btn = document.querySelector('.btn-scan-shoot');
+  if (btn) { btn.textContent = '解析中...'; btn.disabled = true; }
+
+  // Quagga.decodeSingle でその場の1フレームだけ解析
+  const target = document.getElementById('trackingInteractive_' + which);
+  const video = target ? target.querySelector('video') : null;
+
+  if (!video) { showToast('カメラ未起動'); resetShootBtn(); return; }
+
+  // videoフレームをcanvasに描画して解析
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 1280;
+  canvas.height = video.videoHeight || 720;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  Quagga.decodeSingle({
+    decoder: {
+      readers: ['code_128_reader','code_39_reader','ean_reader','ean_8_reader',
+                'upc_reader','upc_e_reader','i2of5_reader','codabar_reader']
+    },
+    src: canvas.toDataURL('image/jpeg', 0.9)
+  }, function(result) {
+    resetShootBtn();
+    if (result && result.codeResult && result.codeResult.code) {
+      document.getElementById(fieldId).value = result.codeResult.code;
+      showToast('読み取り完了: ' + result.codeResult.code);
+      stopTrackingScanner();
+    } else {
+      showToast('読み取れませんでした。もう一度試してください');
+    }
+  });
+}
+
+function resetShootBtn() {
+  const btn = document.querySelector('.btn-scan-shoot');
+  if (btn) { btn.textContent = '読み取る'; btn.disabled = false; }
+}
+
+function stopTrackingScanner() {
+  if (!trackingScanActive) return;
+  try { Quagga.stop(); } catch(e) {}
+  const container = document.getElementById('trackingScanner_' + trackingScanActive);
+  const btn       = document.getElementById('scanBtn_' + trackingScanActive);
+  if (container) container.classList.remove('visible');
+  if (btn) { btn.classList.remove('active'); btn.textContent = '📷'; }
+  trackingScanActive = null;
 }
 
 // ══════════════════════════════════════
@@ -1030,6 +1104,75 @@ async function syncFromGas(filterMode){
           return new Date(new Date(r.date).getTime()+CFG.deadlineDays*86400000)<today;
         }).length;
         return total;
+      })() : total;
+    showToast(`${total}件読み込み（表示: ${filtered}件）✓`);
+  }catch(e){showToast('読み込みエラー: '+e.message);}
+}
+
+// ══════════════════════════════════════
+//  CSV
+// ══════════════════════════════════════
+
+function syncFromGasFiltered(){
+  const filter=document.querySelector('input[name="syncFilter"]:checked');
+  const mode=filter?filter.value:'all';
+  syncFromGas(mode);
+}
+function exportCSV(){
+  if(!history.length){showToast('登録データがありません');return;}
+  const header=['登録日時','到着日','時刻','旧送り状番号','返送送り状番号','受取人氏名','受取人住所','商品名・荷姿','返送理由','数量','ロケーション','ロケーション状態','返送済み','返送日','返送備考'];
+  const rows=history.map(i=>[
+    i.registeredAt,i.date,i.time,i.oldTracking,i.returnTracking||'',
+    i.recipient,i.recipientAddress||'',i.itemName,i.reason||'',i.qty,
+    i.location||'',i.locPending?'未定':'確定',
+    i.returned?'返送済':'未返送',i.returnedDate||'',i.returnNote||''
+  ]);
+  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function setStatus(msg,type=''){
+  const el=document.getElementById('status');if(!el)return;
+  el.className=type;
+  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+</script>]);
+  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function setStatus(msg,type=''){
+  const el=document.getElementById('status');if(!el)return;
+  el.className=type;
+  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+</script>tal;
       })() : total;
     showToast(`${total}件読み込み（表示: ${filtered}件）✓`);
   }catch(e){showToast('読み込みエラー: '+e.message);}
