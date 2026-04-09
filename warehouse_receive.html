@@ -886,20 +886,35 @@ async function syncFromGas(filterMode){
   document.getElementById('syncModal').classList.remove('open');
   showToast('シートから読み込み中...');
   try{
-    const res=await fetch(`${gasUrl}?mode=getAll`);
+    const res=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mode:'getAll'})});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     if(!data.rows||!data.rows.length){showToast('データなし');return;}
-    let rows=data.rows.map(r=>({
-      registeredAt:r[0]||'',date:r[1]||'',time:r[2]||'',
-      oldTracking:r[3]||'',returnTracking:r[4]||'',
-      recipient:r[5]||'',recipientAddress:r[6]||'',
-      itemName:r[7]||'',reason:r[8]||'',qty:parseInt(r[9])||1,
-      location:r[10]||'',locPending:r[11]==='未定',
-      returned:r[12]==='返送済',returnedDate:r[13]||'',returnNote:r[14]||'',
-      disposed:r[15]==='廃棄済',disposedDate:r[16]||'',
-      id:Date.now()+Math.random()
-    }));
+    // GASはオブジェクト配列（{旧送り状番号:...}）または配列（[val,val,...]）どちらにも対応
+    let rows=data.rows.map(r=>{
+      const isArr=Array.isArray(r);
+      const g=(key,idx)=>isArr?(r[idx]||''):(r[key]||'');
+      return {
+        registeredAt: g('登録日時',0),
+        date:         g('到着日',1),
+        time:         g('時刻',2),
+        oldTracking:  g('旧送り状番号',3),
+        returnTracking:g('返送送り状番号',4),
+        recipient:    g('受取人氏名',5),
+        recipientAddress:g('受取人住所',6),
+        itemName:     g('商品名・荷姿',7),
+        reason:       g('返送理由',8),
+        qty:          parseInt(g('数量',9))||1,
+        location:     g('ロケーション',10),
+        locPending:   g('ロケーション状態',11)==='未定',
+        returned:     g('返送済み',12)==='返送済',
+        returnedDate: g('返送日',13),
+        returnNote:   g('返送備考',14),
+        disposed:     g('廃棄済み',15)==='廃棄済',
+        disposedDate: g('廃棄日',16),
+        id:           Date.now()+Math.random()
+      };
+    });
     const today=new Date(); today.setHours(0,0,0,0);
     if(filterMode==='unreturned') rows=rows.filter(r=>!r.returned&&!r.disposed);
     else if(filterMode==='returned') rows=rows.filter(r=>r.returned);
