@@ -1149,34 +1149,6 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 
 
-</script>]);
-  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
-  a.click();
-}
-
-// ══════════════════════════════════════
-//  UTILS
-// ══════════════════════════════════════
-function setStatus(msg,type=''){
-  const el=document.getElementById('status');if(!el)return;
-  el.className=type;
-  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
-}
-
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-
-
-</script>tal;
-      })() : total;
-    showToast(`${total}件読み込み（表示: ${filtered}件）✓`);
-  }catch(e){showToast('読み込みエラー: '+e.message);}
-}
 
 // ══════════════════════════════════════
 //  CSV
