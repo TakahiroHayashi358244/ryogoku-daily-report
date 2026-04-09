@@ -546,35 +546,7 @@ window.onload=()=>{
   renderHistory();
   // バーコードスキャナ対応: Enter後に次の欄へフォーカス移動＋ソフトキーボード強制表示
   setupScannerEnterHandlers();
-  setupTouchFocusHandlers();
 };
-
-function forceKeyboard(el) {
-  // iOSでソフトキーボードを強制表示するトリック
-  el.setAttribute('readonly', '');
-  el.focus();
-  setTimeout(() => {
-    el.removeAttribute('readonly');
-    el.focus();
-  }, 30);
-}
-
-function setupTouchFocusHandlers() {
-  // テキスト入力欄をタップしたときソフトキーボードを強制表示
-  const textFields = ['recipientName','recipientAddress','itemName',
-                      'reasonOtherText','editRecipient','editItemName',
-                      'editReason','returnNote','locInput2','editLocation'];
-  textFields.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('touchend', function(e) {
-      if (document.activeElement !== this) {
-        e.preventDefault();
-        forceKeyboard(this);
-      }
-    }, {passive: false});
-  });
-}
 
 function setupScannerEnterHandlers() {
   // スキャナ入力の流れ: 旧送状番号 → 返送番号 → 氏名 → 商品名
