@@ -101,6 +101,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .ocr-token-btns{display:flex;gap:6px;flex-wrap:wrap}
 .ocr-token-btn{border:none;border-radius:4px;padding:4px 8px;font-size:0.65rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Noto Sans JP',sans-serif;margin-bottom:2px}
 .ocr-token-btn.t-old{background:#e8f0fe;color:#1a56db}
+.ocr-token-btn.selected{outline:2.5px solid #333;opacity:1;font-weight:900;transform:scale(1.06)}
+.ocr-applied{background:#fffbe6 !important;border-color:#f0c040 !important}
 .ocr-token-btn.t-new{background:#fef3e2;color:var(--warn)}
 .ocr-token-btn.t-recv{background:#e6f4ea;color:var(--ok)}
 .ocr-token-btn.t-item{background:#f3e8ff;color:var(--returned)}
@@ -513,7 +515,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       </div>
     </div>
     <div class="modal-btns">
-      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-cancel" onclick" onclick="closeModal('syncModal')">キャンセル</button>
       <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
     </div>
   </div>
@@ -868,13 +870,51 @@ function showOcrTokens(tokens,title){
   document.getElementById('ocrTokensBox').classList.add('visible');
 }
 function applyToken(idx,field){
-  const text=(window._ocrTokens||[])[idx]||'';
+  const raw=(window._ocrTokens||[])[idx]||'';
+
+  // 先頭の「ラベル: 」を除去（例: 「送り状番号: 」「氏名: 」等）
+  const text=raw.replace(/^[^！-～　-〿゠-ヿ぀-ゟ一-鿿\w]{0,0}[　-鿿！-～A-Za-z0-9]+[:：]\s*/,'').trim()||raw.trim();
+
   const map={old:'oldTrackingNo',new:'returnTrackingNo',recv:'recipientName',item:'itemName'};
-  if(map[field]){document.getElementById(map[field]).value=text;showToast('反映しました ✓');}
+  const targetId=map[field];
+  if(!targetId)return;
+
+  // 同じfieldに既に選択済みのボタンがあれば解除（入力欄の色も戻す）
+  if(!window._ocrSelected) window._ocrSelected={};
+  const prevIdx=window._ocrSelected[field];
+  if(prevIdx!==undefined && prevIdx!==idx){
+    const prevRow=document.querySelectorAll('.ocr-token-row')[prevIdx];
+    if(prevRow){
+      const prevBtn=prevRow.querySelector(`.ocr-token-btn.t-${field==='old'?'old':field==='new'?'new':field==='recv'?'recv':'item'}`);
+      if(prevBtn) prevBtn.classList.remove('selected');
+    }
+  }
+
+  // 現在のボタンを強調
+  const curRow=document.querySelectorAll('.ocr-token-row')[idx];
+  if(curRow){
+    const cls=field==='old'?'t-old':field==='new'?'t-new':field==='recv'?'t-recv':'t-item';
+    const curBtn=curRow.querySelector('.ocr-token-btn.'+cls);
+    if(curBtn) curBtn.classList.add('selected');
+  }
+
+  // 入力欄に反映して黄色ハイライト
+  const el=document.getElementById(targetId);
+  el.value=text;
+  el.classList.add('ocr-applied');
+
+  // 選択状態を記録
+  window._ocrSelected[field]=idx;
+
+  showToast('反映しました ✓');
 }
 function resetOcr(){
   ['ocrPreviewWrap','ocrTokensBox','ocrErr','ocrOverlay'].forEach(id=>document.getElementById(id).classList.remove('visible'));
-  document.getElementById('ocrPreview').src='';window._ocrTokens=[];
+  document.getElementById('ocrPreview').src='';window._ocrTokens=[];window._ocrSelected={};
+  // 入力欄の黄色ハイライトを解除
+  ['oldTrackingNo','returnTrackingNo','recipientName','itemName'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.classList.remove('ocr-applied');
+  });
 }
 
 // ══════════════════════════════════════
@@ -1313,6 +1353,13 @@ function exportCSV(){
   a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
   a.click();
 }
+
+
+
+
+
+
+
 
 
 </script>
