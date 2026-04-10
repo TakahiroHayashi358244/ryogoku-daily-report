@@ -759,13 +759,21 @@ function checkUpdate(){
 //  REASON CHIPS
 // ══════════════════════════════════════
 function toggleReason(el,val){
-  const others=document.querySelectorAll('.reason-chip');
-  others.forEach(c=>c.classList.remove('selected'));
-  el.classList.add('selected');
+  const isSelected = el.classList.contains('selected');
+  // 全ボタンの選択を解除
+  document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
   const other=document.getElementById('reasonOther');
   const otherText=document.getElementById('reasonOtherText');
-  if(val==='自由入力'){other.classList.add('visible');otherText.focus();}
-  else{other.classList.remove('visible');otherText.value='';}
+  if(isSelected){
+    // 再タップ→選択解除
+    other.classList.remove('visible');
+    otherText.value='';
+  } else {
+    // 新たに選択
+    el.classList.add('selected');
+    if(val==='自由入力'){other.classList.add('visible');otherText.focus();}
+    else{other.classList.remove('visible');otherText.value='';}
+  }
 }
 function getReasonValue(){
   const sel=document.querySelector('.reason-chip.selected');
