@@ -721,6 +721,7 @@ function getReasonValue(){
 //  送状バーコードスキャナー（QuaggaJS）
 // ══════════════════════════════════════
 let trackingScanActive = null;
+let _scanAutoStopTimer = null;
 
 function toggleTrackingScanner(which) {
   if (trackingScanActive === which) {
@@ -746,6 +747,15 @@ function startTrackingScanner(which) {
   btn.classList.add('active');
   btn.textContent = '⏹';
   trackingScanActive = which;
+
+  // 30秒後に自動停止（バッテリー節約）
+  if (_scanAutoStopTimer) clearTimeout(_scanAutoStopTimer);
+  _scanAutoStopTimer = setTimeout(() => {
+    if (trackingScanActive) {
+      stopTrackingScanner();
+      showToast('カメラを自動停止しました');
+    }
+  }, 30000);
 
   Quagga.init({
     inputStream: {
@@ -817,6 +827,8 @@ function stopTrackingScanner() {
   if (container) container.classList.remove('visible');
   if (btn) { btn.classList.remove('active'); btn.textContent = '📷'; }
   trackingScanActive = null;
+  // タイマーをクリア
+  if (_scanAutoStopTimer) { clearTimeout(_scanAutoStopTimer); _scanAutoStopTimer = null; }
 }
 
 // ══════════════════════════════════════
@@ -831,6 +843,11 @@ function toggleCamera(){
 function startCamera(){
   document.getElementById('scanner-container').classList.add('visible');
   const btn=document.getElementById('camBtn');btn.classList.add('active');btn.textContent='⏹';
+  // 30秒後に自動停止
+  if (_scanAutoStopTimer) clearTimeout(_scanAutoStopTimer);
+  _scanAutoStopTimer = setTimeout(() => {
+    if (scanning) { stopCamera(); showToast('カメラを自動停止しました'); }
+  }, 30000);
   Quagga.init({inputStream:{name:'Live',type:'LiveStream',target:document.getElementById('interactive'),constraints:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}},decoder:{readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader','i2of5_reader']}},function(err){
     if(err){setStatus('カメラ起動失敗','err');return;}
     document.querySelectorAll('#interactive canvas').forEach(c=>c.style.cssText='display:none!important');
@@ -842,6 +859,7 @@ function stopCamera(){
   if(scanning){Quagga.stop();scanning=false;}
   document.getElementById('scanner-container').classList.remove('visible');
   const btn=document.getElementById('camBtn');btn.classList.remove('active');btn.textContent='📷';lastCode=null;
+  if (_scanAutoStopTimer) { clearTimeout(_scanAutoStopTimer); _scanAutoStopTimer = null; }
 }
 function shootJanBarcode() {
   const btn = document.getElementById('janShootBtn');
