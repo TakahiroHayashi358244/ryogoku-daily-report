@@ -541,7 +541,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 //  CONST & STATE
 // ══════════════════════════════════════
 const GAS_DEFAULT='https://script.google.com/macros/s/AKfycbwdCC596WlUhEt-KZ8kzj2ekOb__T9QtfCGIXdDsrhjEfFkpt_iKjvVTMrM2nTBpF_K/exec';
-let CFG={yahooId:localStorage.getItem('wh_yahoo_id')||'',gasUrl:localStorage.getItem('wh_gas_url')||'',deadlineDays:parseInt(localStorage.getItem('wh_deadline_days'))||14};
+let CFG={yahooId:localStorage.getItem('wh_yahoo_id')||'3b3ZXkia8a',gasUrl:localStorage.getItem('wh_gas_url')||'',deadlineDays:parseInt(localStorage.getItem('wh_deadline_days'))||14};
 let history=JSON.parse(localStorage.getItem('wh_history')||'[]');
 let currentProduct=null;
 let scanning=false;
@@ -573,10 +573,10 @@ window.onload=()=>{
   const _tz=`${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
   document.getElementById('arrivalDate').value=_tz;
   updateTime(); setInterval(updateTime,30000);
-  if(CFG.yahooId) document.getElementById('yahooId').value=CFG.yahooId;
+  document.getElementById('yahooId').value=CFG.yahooId;
   if(CFG.gasUrl)  document.getElementById('gasUrl').value=CFG.gasUrl;
   if(CFG.deadlineDays) document.getElementById('deadlineDays').value=CFG.deadlineDays;
-  if(!CFG.gasUrl) document.getElementById('configPanel').classList.add('open');
+  // 設定パネルは常に閉じた状態で起動（手動で開く）
   renderHistory();
   // バーコードスキャナ対応: Enter後に次の欄へフォーカス移動＋ソフトキーボード強制表示
   setupScannerEnterHandlers();
