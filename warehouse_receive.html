@@ -303,15 +303,15 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="form-row">
       <label>受取人氏名<span class="req">*</span></label>
-      <input type="text" class="req-input" id="recipientName" autocomplete="off" inputmode="text" placeholder="例: 山田 太郎 / ○○株式会社">
+      <input type="text" class="req-input" id="recipientName" autocomplete="off" inputmode="text" placeholder="">
     </div>
     <div class="form-row">
       <label>受取人住所<span class="opt">任意</span></label>
-      <input type="text" id="recipientAddress" autocomplete="off" inputmode="text" placeholder="例: 東京都渋谷区〇〇1-2-3">
+      <input type="text" id="recipientAddress" autocomplete="off" inputmode="text" placeholder="">
     </div>
     <div class="form-row">
       <label>商品名・荷姿<span class="req">*</span></label>
-      <input type="text" class="req-input" id="itemName" autocomplete="off" inputmode="text" placeholder="例: 化粧品 / 衣類 / 精密機器">
+      <input type="text" class="req-input" id="itemName" autocomplete="off" inputmode="text" placeholder="">
     </div>
     <div class="form-row">
       <label>返送理由<span class="opt">任意</span></label>
@@ -345,7 +345,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row">
       <label>ロケーション番号<span class="req">*</span><span id="locCarryHint" style="display:none;font-size:0.72rem;color:var(--ok);font-weight:700;margin-left:6px"></span></label>
       <div class="loc-wrap">
-        <input type="text" class="mono req-input" id="locationInput" autocomplete="off" placeholder="例: A-01-03">
+        <input type="text" class="mono req-input" id="locationInput" autocomplete="off" placeholder="">
         <button class="btn-barcode" id="scanBtn_loc" onclick="toggleTrackingScanner('loc')">📷</button>
       </div>
       <div class="tracking-scanner" id="trackingScanner_loc">
@@ -376,7 +376,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <div class="form-row" style="margin:0">
         <label>JAN検索<span class="opt">スキャンまたは手入力</span></label>
         <div class="scan-wrap">
-          <input type="tel" class="mono" id="janInput" placeholder="4901234567890" maxlength="14"
+          <input type="tel" class="mono" id="janInput" placeholder="" maxlength="14"
                  oninput="onJanInput()" onkeydown="if(event.key==='Enter'){event.preventDefault();searchProduct()}">
           <button class="btn-cam" id="camBtn" onclick="toggleCamera()">📷</button>
         </div>
@@ -421,7 +421,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row">
       <label>返送期限（到着日から何日）</label>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="tel" id="deadlineDays" placeholder="例: 14" style="width:100px">
+        <input type="tel" id="deadlineDays" placeholder="" style="width:100px">
         <span style="font-size:0.82rem;color:var(--ink2)">日以内 / 0で無効</span>
       </div>
     </div>
@@ -463,7 +463,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="form-row"><label>商品名・荷姿</label><input type="text" id="editItemName" autocomplete="off" inputmode="text"></div>
     <div class="form-row"><label>返送理由</label><input type="text" id="editReason"></div>
     <div class="form-row"><label>数量</label><input type="tel" id="editQty"></div>
-    <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" autocomplete="off" placeholder="例: A-01-03"></div>
+    <div class="form-row"><label>ロケーション</label><input type="text" class="mono req-input" id="editLocation" autocomplete="off" placeholder=""></div>
     <div class="edit-action-btns">
       <button class="btn-edit-action btn-loc" onclick="editOpenLoc()">📍 ロケーション修正</button>
       <button id="editRetBtn" class="btn-edit-action btn-ret" onclick="editToggleReturn()">📦 返送済みにする</button>
@@ -482,7 +482,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <input type="hidden" id="locIndex">
     <div class="form-row">
       <label>ロケーション番号</label>
-      <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="A-01-03">
+      <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="">
     </div>
     <div id="locPendingWrap" class="form-row" style="flex-direction:row;align-items:center;gap:8px">
       <input type="checkbox" id="locPending2" style="width:auto">
