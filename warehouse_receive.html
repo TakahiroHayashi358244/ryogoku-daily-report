@@ -343,9 +343,9 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="card-head"><span class="step">2</span>ロケーション</div>
   <div class="card-body">
     <div class="form-row">
-      <label>ロケーション番号<span class="opt">任意</span><span id="locCarryHint" style="display:none;font-size:0.72rem;color:var(--ok);font-weight:700;margin-left:6px"></span></label>
+      <label>ロケーション番号<span class="req">*</span><span id="locCarryHint" style="display:none;font-size:0.72rem;color:var(--ok);font-weight:700;margin-left:6px"></span></label>
       <div class="loc-wrap">
-        <input type="text" class="mono" id="locationInput" autocomplete="off" placeholder="例: A-01-03">
+        <input type="text" class="mono req-input" id="locationInput" autocomplete="off" placeholder="例: A-01-03">
         <button class="btn-barcode" id="scanBtn_loc" onclick="toggleTrackingScanner('loc')">📷</button>
       </div>
       <div class="tracking-scanner" id="trackingScanner_loc">
@@ -1094,6 +1094,7 @@ function submitEntry(){
   if(!oldTracking){shake('oldTrackingNo');showToast('旧送り状番号を入力してください');return;}
   if(!recipient){shake('recipientName');showToast('受取人氏名を入力してください');return;}
   if(!itemName){shake('itemName');showToast('商品名・荷姿を入力してください');return;}
+  if(!location){shake('locationInput');showToast('ロケーション番号を入力してください');return;}
   const entry={
     registeredAt:new Date().toISOString(),
     date,time,oldTracking,returnTracking,
