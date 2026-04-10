@@ -343,7 +343,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
   <div class="card-head"><span class="step">2</span>ロケーション</div>
   <div class="card-body">
     <div class="form-row">
-      <label>ロケーション番号<span class="opt">任意</span></label>
+      <label>ロケーション番号<span class="opt">任意</span><span id="locCarryHint" style="display:none;font-size:0.72rem;color:var(--ok);font-weight:700;margin-left:6px"></span></label>
       <div class="loc-wrap">
         <input type="text" class="mono" id="locationInput" autocomplete="off" placeholder="例: A-01-03">
         <button class="btn-barcode" id="scanBtn_loc" onclick="toggleTrackingScanner('loc')">📷</button>
@@ -722,6 +722,7 @@ function getReasonValue(){
 // ══════════════════════════════════════
 let trackingScanActive = null;
 let _scanAutoStopTimer = null;
+let _lastLocation = '';  // 前回登録のロケーション番号を保持
 
 function toggleTrackingScanner(which) {
   if (trackingScanActive === which) {
@@ -1101,6 +1102,8 @@ function submitEntry(){
     returned:false,returnedDate:'',returnNote:'',
     id:Date.now()
   };
+  // 登録前にロケーション番号を保存（次の登録に引き継ぐ）
+  _lastLocation = location;
   history.unshift(entry);
   save();
   sendToGas(entry);
@@ -1148,8 +1151,15 @@ function resetForm(){
   document.querySelectorAll('.reason-chip').forEach(c=>c.classList.remove('selected'));
   document.getElementById('reasonOther').classList.remove('visible');
   document.getElementById('qtyInput').value=1;
-  document.getElementById('locationInput').value='';
+  // ロケーション番号は前回値を引き継ぐ（空の場合のみクリア）
+  document.getElementById('locationInput').value = _lastLocation;
   document.getElementById('locPendingNote').style.display='none';
+  // ロケーション欄に前回値の表示ヒントを更新
+  const locHint = document.getElementById('locCarryHint');
+  if (locHint) {
+    locHint.textContent = _lastLocation ? `前回: ${_lastLocation}` : '';
+    locHint.style.display = _lastLocation ? 'inline' : 'none';
+  }
   document.getElementById('janInput').value='';
   document.getElementById('productFound').classList.remove('visible');
   setStatus('');
