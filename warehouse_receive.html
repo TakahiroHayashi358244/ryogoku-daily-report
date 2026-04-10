@@ -211,6 +211,30 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .sync-opt{display:flex;align-items:center;gap:8px;font-size:0.9rem;cursor:pointer;padding:6px 0}
 .sync-opt input{width:18px;height:18px;cursor:pointer;accent-color:var(--ok)}
 .btn-edit-action.btn-undo{background:#ffeaea;color:#c0392b;border:1.5px solid #f5b7b1}
+
+/* ── ロケーションピッカー ── */
+.loc-picker-modal{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center}
+.loc-picker-modal.open{display:flex}
+.loc-picker-box{background:var(--surface);border-radius:var(--radius);padding:20px 18px;width:88vw;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.25)}
+.loc-picker-box h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:.08em;margin-bottom:14px}
+.loc-drums{display:flex;align-items:center;justify-content:center;gap:0}
+.loc-drum-col{display:flex;flex-direction:column;align-items:center;width:88px}
+.loc-drum-col label{font-size:0.7rem;color:var(--ink2);margin-bottom:6px;letter-spacing:.06em}
+.loc-drum{height:200px;overflow:hidden;position:relative;width:80px;cursor:grab;touch-action:none}
+.loc-drum-inner{will-change:transform}
+.loc-drum-item{height:50px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--ink2);font-family:'JetBrains Mono',monospace;user-select:none}
+.loc-drum-item.active{color:var(--ink);font-size:28px}
+.loc-drum-fade-t,.loc-drum-fade-b{position:absolute;left:0;right:0;height:70px;pointer-events:none;z-index:2}
+.loc-drum-fade-t{top:0;background:linear-gradient(to bottom,var(--surface) 30%,transparent)}
+.loc-drum-fade-b{bottom:0;background:linear-gradient(to top,var(--surface) 30%,transparent)}
+.loc-drum-sel{position:absolute;top:50%;left:0;right:0;height:50px;transform:translateY(-50%);border-top:1.5px solid var(--border);border-bottom:1.5px solid var(--border);pointer-events:none;z-index:1}
+.loc-sep{font-size:28px;font-weight:700;color:var(--ink);padding:0 6px;margin-top:26px;font-family:'JetBrains Mono',monospace}
+.loc-preview{text-align:center;font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--ink);margin:14px 0 4px;letter-spacing:.1em;min-height:36px}
+.loc-picker-btns{display:flex;gap:10px;margin-top:12px}
+.loc-picker-btns button{flex:1;padding:11px;border-radius:7px;font-weight:700;cursor:pointer;font-size:.9rem}
+.btn-loc-ok{background:var(--ok);color:#fff;border:none}
+.btn-loc-cancel{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink)}
+.btn-loc-open{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink);border-radius:7px;padding:9px 12px;font-size:0.9rem;font-weight:700;cursor:pointer;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -346,6 +370,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <label>ロケーション番号<span class="req">*</span><span id="locCarryHint" style="display:none;font-size:0.72rem;color:var(--ok);font-weight:700;margin-left:6px"></span></label>
       <div class="loc-wrap">
         <input type="text" class="mono req-input" id="locationInput" autocomplete="off" placeholder="">
+        <button class="btn-loc-open" onclick="openLocPicker()">📍</button>
         <button class="btn-barcode" id="scanBtn_loc" onclick="toggleTrackingScanner('loc')">📷</button>
       </div>
       <div class="tracking-scanner" id="trackingScanner_loc">
@@ -482,7 +507,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <input type="hidden" id="locIndex">
     <div class="form-row">
       <label>ロケーション番号</label>
-      <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="">
+      <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="A-01-03">
     </div>
     <div id="locPendingWrap" class="form-row" style="flex-direction:row;align-items:center;gap:8px">
       <input type="checkbox" id="locPending2" style="width:auto">
@@ -523,7 +548,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
       <div class="sync-filter-opts">
         <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
-        <labe<label class="sync-opt"><input type="radio" na<label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
         <label class="sync-opt"><input type="radio" name="syncFilter" value="overdue"> 返送期限切れ</label>
       </div>
@@ -531,6 +556,38 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="modal-btns">
       <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
       <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<div class="loc-picker-modal" id="locPickerModal">
+  <div class="loc-picker-box">
+    <h3>ロケーション選択</h3>
+    <div class="loc-drums">
+      <div class="loc-drum-col">
+        <label>アルファベット</label>
+        <div class="loc-drum" id="locDrumA">
+          <div class="loc-drum-inner" id="locInnerA"></div>
+          <div class="loc-drum-fade-t"></div>
+          <div class="loc-drum-fade-b"></div>
+          <div class="loc-drum-sel"></div>
+        </div>
+      </div>
+      <div class="loc-sep">-</div>
+      <div class="loc-drum-col">
+        <label>番号</label>
+        <div class="loc-drum" id="locDrumN">
+          <div class="loc-drum-inner" id="locInnerN"></div>
+          <div class="loc-drum-fade-t"></div>
+          <div class="loc-drum-fade-b"></div>
+          <div class="loc-drum-sel"></div>
+        </div>
+      </div>
+    </div>
+    <div class="loc-preview" id="locPickerPreview">A-1</div>
+    <div class="loc-picker-btns">
+      <button class="btn-loc-cancel" onclick="closeLocPicker()">キャンセル</button>
+      <button class="btn-loc-ok" onclick="applyLocPicker()">決定</button>
     </div>
   </div>
 </div>
@@ -1440,6 +1497,186 @@ async function syncFromGas(filterMode){
     showToast(`${total}件読み込み（表示: ${filtered}件）✓`);
   }catch(e){showToast('読み込みエラー: '+e.message);}
 }
+
+// ══════════════════════════════════════
+//  CSV
+// ══════════════════════════════════════
+
+function syncFromGasFiltered(){
+  const filter=document.querySelector('input[name="syncFilter"]:checked');
+  const mode=filter?filter.value:'all';
+  syncFromGas(mode);
+}
+function exportCSV(){
+  if(!history.length){showToast('登録データがありません');return;}
+  const header=['登録日時','到着日','時刻','旧送り状番号','返送送り状番号','受取人氏名','受取人住所','商品名・荷姿','返送理由','数量','ロケーション','ロケーション状態','返送済み','返送日','返送備考'];
+  const rows=history.map(i=>[
+    i.registeredAt,i.date,i.time,i.oldTracking,i.returnTracking||'',
+    i.recipient,i.recipientAddress||'',i.itemName,i.reason||'',i.qty,
+    i.location||'',i.locPending?'未定':'確定',
+    i.returned?'返送済':'未返送',i.returnedDate||'',i.returnNote||''
+  ]);
+  const csv=[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`返品管理_${new Date().toLocaleDateString('ja-JP').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  LOCATION PICKER
+// ══════════════════════════════════════════════════════════════
+(function(){
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const NUMS    = Array.from({length:99},(_,i)=>String(i+1));
+  const ITEM_H  = 50;
+  let _pickerA = 0, _pickerN = 0, _initialized = false;
+
+  function buildDrum(innerId, items, onIdxChange) {
+    const inner = document.getElementById(innerId);
+    if (!inner) return;
+    const drum = inner.parentElement;
+    let idx = 0;
+    items.forEach(v => {
+      const d = document.createElement('div');
+      d.className = 'loc-drum-item';
+      d.textContent = v;
+      inner.appendChild(d);
+    });
+    function render(i, animated) {
+      idx = Math.max(0, Math.min(items.length - 1, i));
+      if (!animated) inner.style.transition = 'none';
+      else inner.style.transition = 'transform .15s ease';
+      inner.style.transform = `translateY(${75 - idx * ITEM_H}px)`;
+      inner.querySelectorAll('.loc-drum-item').forEach((el,j) => {
+        el.classList.toggle('active', j === idx);
+      });
+      onIdxChange(idx);
+    }
+    render(0, false);
+    let startY = 0, startIdx = 0, dragging = false;
+    drum.addEventListener('pointerdown', e => {
+      dragging = true; startY = e.clientY; startIdx = idx;
+      drum.setPointerCapture(e.pointerId);
+      inner.style.transition = 'none';
+    });
+    drum.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const delta = Math.round((startY - e.clientY) / ITEM_H);
+      render(startIdx + delta, false);
+    });
+    drum.addEventListener('pointerup', () => {
+      dragging = false;
+      inner.style.transition = 'transform .15s ease';
+      render(idx, true);
+    });
+    drum.addEventListener('wheel', e => {
+      e.preventDefault();
+      render(idx + (e.deltaY > 0 ? 1 : -1), true);
+    }, {passive:false});
+    return function(newIdx) { render(newIdx, true); };
+  }
+
+  let setA, setN;
+
+  function initPicker() {
+    if (_initialized) return;
+    _initialized = true;
+    setA = buildDrum('locInnerA', LETTERS, i => { _pickerA = i; updatePreview(); });
+    setN = buildDrum('locInnerN', NUMS,    i => { _pickerN = i; updatePreview(); });
+  }
+
+  function updatePreview() {
+    const el = document.getElementById('locPickerPreview');
+    if (el) el.textContent = LETTERS[_pickerA] + '-' + NUMS[_pickerN];
+  }
+
+  window.openLocPicker = function() {
+    initPicker();
+    // 現在のロケーション入力値からピッカーを初期化
+    const cur = (document.getElementById('locationInput').value || '').trim().toUpperCase();
+    const m = cur.match(/^([A-Z])-(\d+)$/);
+    if (m) {
+      const ai = LETTERS.indexOf(m[1]);
+      const ni = NUMS.indexOf(m[2]);
+      if (ai >= 0 && setA) setA(ai);
+      if (ni >= 0 && setN) setN(ni);
+    }
+    updatePreview();
+    document.getElementById('locPickerModal').classList.add('open');
+  };
+
+  window.closeLocPicker = function() {
+    document.getElementById('locPickerModal').classList.remove('open');
+  };
+
+  window.applyLocPicker = function() {
+    const val = LETTERS[_pickerA] + '-' + NUMS[_pickerN];
+    document.getElementById('locationInput').value = val;
+    closeLocPicker();
+    showToast('ロケーション: ' + val);
+  };
+})();
+
+// ══════════════════════════════════════
+//  HISTORY SUMMARY
+// ══════════════════════════════════════
+function updateHistorySummary(){
+  const el=document.getElementById('historySummary');
+  if(!el||!history)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const total=history.length;
+  const returned=history.filter(r=>r.returned).length;
+  const disposed=history.filter(r=>r.disposed).length;
+  const unreturned=history.filter(r=>!r.returned&&!r.disposed).length;
+  const deadlineDays=CFG.deadlineDays||7;
+  const overdue=history.filter(r=>{
+    if(r.returned||r.disposed)return false;
+    if(!r.date)return false;
+    return new Date(new Date(r.date).getTime()+deadlineDays*86400000)<today;
+  }).length;
+  el.innerHTML=
+    '<span class="summary-badge sb-total">合計 '+total+'件</span>'+
+    '<span class="summary-badge sb-unreturned">未返送 '+unreturned+'件</span>'+
+    '<span class="summary-badge sb-returned">返送済 '+returned+'件</span>'+
+    '<span class="summary-badge sb-disposed">廃棄 '+disposed+'件</span>'+
+    (overdue>0?'<span class="summary-badge sb-overdue">期限切れ '+overdue+'件</span>':'');
+}
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function setStatus(msg,type=''){
+  const el=document.getElementById('status');if(!el)return;
+  el.className=type;
+  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ══════════════════════════════════════
 //  CSV
