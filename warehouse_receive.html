@@ -819,15 +819,29 @@ function resetShootBtn() {
   if (btn) { btn.textContent = '読み取る'; btn.disabled = false; }
 }
 
+
+// MediaStreamのトラックを完全停止（iOSのカメラ収録インジケーター解除）
+function stopMediaStream(videoEl) {
+  if (!videoEl) return;
+  const stream = videoEl.srcObject;
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    videoEl.srcObject = null;
+  }
+}
+
 function stopTrackingScanner() {
   if (!trackingScanActive) return;
   try { Quagga.stop(); } catch(e) {}
+  // MediaStreamを完全停止（iOSのカメラ収録インジケーター解除）
+  const target = document.getElementById('trackingInteractive_' + trackingScanActive);
+  const video  = target ? target.querySelector('video') : null;
+  stopMediaStream(video);
   const container = document.getElementById('trackingScanner_' + trackingScanActive);
   const btn       = document.getElementById('scanBtn_' + trackingScanActive);
   if (container) container.classList.remove('visible');
   if (btn) { btn.classList.remove('active'); btn.textContent = '📷'; }
   trackingScanActive = null;
-  // タイマーをクリア
   if (_scanAutoStopTimer) { clearTimeout(_scanAutoStopTimer); _scanAutoStopTimer = null; }
 }
 
@@ -857,6 +871,9 @@ function startCamera(){
 }
 function stopCamera(){
   if(scanning){Quagga.stop();scanning=false;}
+  // MediaStreamを完全停止（iOSのカメラ収録インジケーター解除）
+  const video = document.querySelector('#interactive video');
+  stopMediaStream(video);
   document.getElementById('scanner-container').classList.remove('visible');
   const btn=document.getElementById('camBtn');btn.classList.remove('active');btn.textContent='📷';lastCode=null;
   if (_scanAutoStopTimer) { clearTimeout(_scanAutoStopTimer); _scanAutoStopTimer = null; }
