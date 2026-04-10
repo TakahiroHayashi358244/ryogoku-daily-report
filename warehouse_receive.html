@@ -554,7 +554,17 @@ window._ocrTokens=[];
 // Service Worker登録
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/ryogoku-daily-report/sw.js')
-    .then(reg => console.log('SW registered', reg.scope))
+    .then(reg => {
+      // 新規インストール時: アクティブ化を待ってページをリロード
+      if(reg.installing){
+        reg.installing.addEventListener('statechange', e => {
+          if(e.target.state === 'activated'){
+            // SWが初めてアクティブになったらリロード（キャッシュ有効化）
+            location.reload();
+          }
+        });
+      }
+    })
     .catch(err => console.warn('SW registration failed', err));
 }
 
@@ -672,7 +682,10 @@ function checkUpdate(){
         clearTimeout(timer);
         navigator.serviceWorker.removeEventListener('message',handler);
         resetBtn();
-        setStatus('Service Worker未登録。ページをリロードしてください。','var(--accent)');
+        setStatus('初期設定中...自動的にリロードします。','var(--ok)');
+        navigator.serviceWorker.register('/ryogoku-daily-report/sw.js')
+          .then(()=>setTimeout(()=>location.reload(true),1500))
+          .catch(()=>{ resetBtn(); setStatus('SW登録失敗。ブラウザを再起動してください。','var(--accent)'); });
         return;
       }
       reg.active.postMessage('CHECK_UPDATE');
@@ -778,11 +791,12 @@ function shootTrackingBarcode(which) {
   }, function(result) {
     resetShootBtn();
     if (result && result.codeResult && result.codeResult.code) {
-      // 両端のAを除去（例: A1234567890A → 1234567890）
       const raw = result.codeResult.code;
-      const cleaned = raw.replace(/^A+|A+$/g, '');
+      // ロケーション番号はA除去しない（A-1等の英数字混合に対応）
+      // 送状番号のみ両端のAを除去（例: A1234567890A → 1234567890）
+      const cleaned = (which === 'loc') ? raw : raw.replace(/^A+|A+$/g, '');
       document.getElementById(fieldId).value = cleaned || raw;
-      showToast('読み取り完了: ' + result.codeResult.code);
+      showToast('読み取り完了: ' + (cleaned || raw));
       stopTrackingScanner();
     } else {
       showToast('読み取れませんでした。もう一度試してください');
