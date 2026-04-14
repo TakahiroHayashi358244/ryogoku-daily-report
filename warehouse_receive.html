@@ -490,6 +490,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <h3>登録内容を編集</h3>
     <input type="hidden" id="editIndex">
     <div class="modal-meta" id="editModalMeta"></div>
+    <div class="form-row"><label>到着日</label><input type="date" id="editArrivalDate"></div>
     <div class="form-row"><label>旧送り状番号</label><input type="tel" class="mono" id="editOldTracking" autocomplete="off"></div>
     <div class="form-row"><label>返送送り状番号</label><input type="tel" class="mono" id="editReturnTracking" autocomplete="off"></div>
     <div class="form-row"><label>受取人氏名</label><input type="text" id="editRecipient" autocomplete="off" inputmode="text"></div>
@@ -650,12 +651,8 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
     <div class="modal-btns">
       <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
-      <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
-    </div>
-  </div>
-</div>
+      <button class="btn-modal-ok" onclic<div id="toast"></div>
 
-<div id="toast"></div>
 <script>
 // ══════════════════════════════════════
 //  CONST & STATE
@@ -1379,6 +1376,7 @@ function renderHistory(syncFilter){
 function openEditModal(i){
   const item=history[i];if(!item)return;
   document.getElementById('editIndex').value=i;
+  document.getElementById('editArrivalDate').value=item.date||'';
   document.getElementById('editOldTracking').value=item.oldTracking||'';
   document.getElementById('editReturnTracking').value=item.returnTracking||'';
   document.getElementById('editRecipient').value=item.recipient||'';
@@ -1459,6 +1457,7 @@ function editDoDispose(){
 function saveEdit(){
   const i=parseInt(document.getElementById('editIndex').value);
   if(isNaN(i)||!history[i])return;
+  history[i].date=document.getElementById('editArrivalDate').value;
   history[i].oldTracking=document.getElementById('editOldTracking').value.trim();
   history[i].returnTracking=document.getElementById('editReturnTracking').value.trim();
   history[i].recipient=document.getElementById('editRecipient').value.trim();
@@ -1902,6 +1901,14 @@ function setStatus(msg,type=''){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+
+
+
+
+
 
 
 
