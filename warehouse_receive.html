@@ -869,8 +869,8 @@ function shootTrackingBarcode(which) {
     if (result && result.codeResult && result.codeResult.code) {
       const raw = result.codeResult.code;
       // ロケーション番号はA除去しない（A-1等の英数字混合に対応）
-      // 送状番号のみ両端のAを除去（例: A1234567890A → 1234567890）
-      const cleaned = (which === 'loc') ? raw : raw.replace(/^A+|A+$/g, '');
+      // 送状番号のみ両端のA・Dを除去（例: A1234567890A, D1234567890D → 1234567890）
+      const cleaned = (which === 'loc') ? raw : raw.replace(/^[AD]+|[AD]+$/g, '');
       document.getElementById(fieldId).value = cleaned || raw;
       showToast('読み取り完了: ' + (cleaned || raw));
       stopTrackingScanner();
