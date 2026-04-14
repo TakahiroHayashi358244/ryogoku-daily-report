@@ -235,6 +235,13 @@ input.filled{border-color:var(--ok);background:#f0faf5}
 .btn-loc-ok{background:var(--ok);color:#fff;border:none}
 .btn-loc-cancel{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink)}
 .btn-loc-open{background:var(--surface2);border:1.5px solid var(--border);color:var(--ink);border-radius:7px;padding:9px 12px;font-size:0.9rem;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* ── ロケーション絞り込み ── */
+.loc-filter-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);min-height:0;transition:padding .2s}
+.loc-filter-bar:empty{padding:0;border:none}
+.loc-filter-chip{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:var(--surface2);color:var(--ink2);font-family:'JetBrains Mono',monospace}
+.loc-filter-chip.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.loc-filter-chip.all-chip{font-family:inherit;letter-spacing:0}
 </style>
 </head>
 <body>
@@ -466,6 +473,7 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     </div>
   </div>
   <div class="history-summary" id="historySummary"></div>
+  <div class="loc-filter-bar" id="locFilterBar"></div>
   <div class="search-bar">
     <input type="text" id="searchInput" placeholder="送り状番号 / 氏名 / 商品名で検索..."
            oninput="renderHistory()" onkeydown="if(event.key==='Enter')renderHistory()">
@@ -568,18 +576,6 @@ input.filled{border-color:var(--ok);background:#f0faf5}
         <label>アルファベット</label>
         <div class="loc-drum" id="locDrumA">
           <div class="loc-drum-inner" id="locInnerA"></div>
-          <div class="loc-drum-fade-t"></div>
-          <div class="loc-drum-fade-b"></div>
-          <div class="loc-drum-sel"></div>
-        </div>
-      </div>
-      <div class="loc-sep">-</div>
-      <div class="loc-drum-col">
-        <label>番号</label>
-        <div class="loc-drum" id="locDrumN">
-          <div class="loc-drum-inner" id="locInnerN"></div>
-          <div class="loc-drum-fade-t"></div>
-          <div class="loc-drum-fade-b"></div>
           <div class="loc-drum-sel"></div>
         </div>
       </div>
@@ -588,6 +584,61 @@ input.filled{border-color:var(--ok);background:#f0faf5}
     <div class="loc-picker-btns">
       <button class="btn-loc-cancel" onclick="closeLocPicker()">キャンセル</button>
       <button class="btn-loc-ok" onclick="applyLocPicker()">決定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="locModal">
+  <div class="modal">
+    <h3>ロケーション設定</h3>
+    <input type="hidden" id="locIndex">
+    <div class="form-row">
+      <label>ロケーション番号</label>
+      <input type="text" class="mono" id="locInput2" autocomplete="off" placeholder="A-01-03">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="saveLocation()">保存</button>
+      <button class="btn-modal-cancel" onclick="closeModal('locModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="returnModal">
+  <div class="modal">
+    <h3>返送済みにする</h3>
+    <input type="hidden" id="returnIndex">
+    <div class="form-row">
+      <label>返送日</label>
+      <input type="date" id="returnDate">
+    </div>
+    <div class="form-row">
+      <label>備考</label>
+      <input type="text" id="returnNote" autocomplete="off" placeholder="任意">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-ok" onclick="saveReturn()">保存</button>
+      <button class="btn-modal-cancel" onclick="closeModal('returnModal')">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="syncModal">
+  <div class="modal">
+    <h3>シートから読み込む</h3>
+    <div class="modal-meta">スプレッドシートのデータでアプリを更新します</div>
+    <div class="sync-filter">
+      <label class="sync-filter-label">読み込み対象</label>
+      <div class="sync-filter-opts">
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="all" checked> 全て</label>
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="unreturned"> 未返送のみ</label>
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="returned"> 返送済み</label>
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="disposed"> 廃棄済み</label>
+        <label class="sync-opt"><input type="radio" name="syncFilter" value="overdue"> 返送期限切れ</label>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal('syncModal')">キャンセル</button>
+      <button class="btn-modal-ok" onclick="syncFromGasFiltered()">読み込む</button>
     </div>
   </div>
 </div>
@@ -788,6 +839,7 @@ function getReasonValue(){
 let trackingScanActive = null;
 let _scanAutoStopTimer = null;
 let _lastLocation = '';  // 前回登録のロケーション番号を保持
+let _locFilter = '';    // ロケーション絞り込み
 
 function toggleTrackingScanner(which) {
   if (trackingScanActive === which) {
@@ -1242,11 +1294,14 @@ function renderHistory(syncFilter){
   if(!container)return;
   // サマリー集計・表示
   updateHistorySummary();
+  updateLocFilterBar();
   const q=(document.getElementById('searchInput')||{}).value||'';
   let filtered=q?history.filter(item=>
     (item.oldTracking||'').includes(q)||(item.returnTracking||'').includes(q)||
     (item.recipient||'').includes(q)||(item.itemName||'').includes(q)
   ):history;
+  // ロケーション絞り込み
+  if(_locFilter) filtered=filtered.filter(item=>(item.location||'')=== _locFilter);
   // シート読込時のフィルターを適用
   if(syncFilter&&syncFilter!=='all'){
     const today=new Date();today.setHours(0,0,0,0);
@@ -1630,6 +1685,28 @@ function exportCSV(){
 // ══════════════════════════════════════
 //  HISTORY SUMMARY
 // ══════════════════════════════════════
+
+function updateLocFilterBar(){
+  const bar = document.getElementById('locFilterBar');
+  if(!bar) return;
+  // 履歴内の全ロケーションを収集（重複除去・ソート）
+  const locs = [...new Set(
+    history.map(r=>r.location||'').filter(l=>l)
+  )].sort();
+  if(!locs.length){ bar.innerHTML=''; return; }
+  // 「全て」+各ロケーションのチップを生成
+  bar.innerHTML =
+    `<span class="loc-filter-chip all-chip${_locFilter===''?' active':''}" onclick="setLocFilter('')">全て</span>` +
+    locs.map(l=>
+      `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l}</span>`
+    ).join('');
+}
+
+function setLocFilter(loc){
+  _locFilter = loc;
+  renderHistory();
+}
+
 function updateHistorySummary(){
   const el=document.getElementById('historySummary');
   if(!el||!history)return;
@@ -1714,6 +1791,28 @@ function exportCSV(){
 // ══════════════════════════════════════
 //  HISTORY SUMMARY
 // ══════════════════════════════════════
+
+function updateLocFilterBar(){
+  const bar = document.getElementById('locFilterBar');
+  if(!bar) return;
+  // 履歴内の全ロケーションを収集（重複除去・ソート）
+  const locs = [...new Set(
+    history.map(r=>r.location||'').filter(l=>l)
+  )].sort();
+  if(!locs.length){ bar.innerHTML=''; return; }
+  // 「全て」+各ロケーションのチップを生成
+  bar.innerHTML =
+    `<span class="loc-filter-chip all-chip${_locFilter===''?' active':''}" onclick="setLocFilter('')">全て</span>` +
+    locs.map(l=>
+      `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l}</span>`
+    ).join('');
+}
+
+function setLocFilter(loc){
+  _locFilter = loc;
+  renderHistory();
+}
+
 function updateHistorySummary(){
   const el=document.getElementById('historySummary');
   if(!el||!history)return;
@@ -1735,6 +1834,29 @@ function updateHistorySummary(){
     '<span class="summary-badge sb-disposed">廃棄 '+disposed+'件</span>'+
     (overdue>0?'<span class="summary-badge sb-overdue">期限切れ '+overdue+'件</span>':'');
 }
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function setStatus(msg,type=''){
+  const el=document.getElementById('status');if(!el)return;
+  el.className=type;
+  el.innerHTML=type==='loading'?`<span class="spinner-sm"></span>${msg}`:msg;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function shake(id){const el=document.getElementById(id);el.style.animation='none';el.offsetHeight;el.style.animation='shake 0.4s ease';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
+
+
+
+
+
+
+
+
 
 // ══════════════════════════════════════
 //  UTILS
