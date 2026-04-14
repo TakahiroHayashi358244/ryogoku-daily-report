@@ -1104,8 +1104,24 @@ async function callClaudeOcrTokens(base64Data){
   const d=await res.json();
   if(d.error)throw new Error(d.error);
   if(!d.text)throw new Error('レスポンスが空です');
-  const parsed=JSON.parse(d.text.replace(/```json|```/g,'').trim());
-  return parsed.items||[];
+  // JSONが途中で切れた場合に末尾を補完して再パース
+  let raw=d.text.replace(/```json|```/g,'').trim();
+  // 末尾が不完全なJSONを修復
+  if(!raw.endsWith('}')) {
+    const lastBracket=raw.lastIndexOf('"');
+    if(lastBracket>0) raw=raw.substring(0,lastBracket)+'"]}';
+    else raw=raw+']}';
+  }
+  try{
+    const parsed=JSON.parse(raw);
+    return parsed.items||[];
+  }catch(e){
+    // 末尾補完でも失敗した場合: テキストをそのまま行分割して返す
+    const lines=d.text.replace(/[^\u3040-\u9FFFa-zA-Z0-9\-:.\/ ]/g,'|').split('|').map(s=>s.trim()).filter(s=>s&&s.length>1);
+
+    if(lines.length) return lines;
+    throw new Error('JSON Parse error: '+e.message);
+  }
 }
 function showOcrTokens(tokens,title){
   const list=document.getElementById('ocrTokensList');
