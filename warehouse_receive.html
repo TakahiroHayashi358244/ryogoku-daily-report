@@ -1697,9 +1697,10 @@ function updateLocFilterBar(){
   // 「全て」+各ロケーションのチップを生成
   bar.innerHTML =
     `<span class="loc-filter-chip all-chip${_locFilter===''?' active':''}" onclick="setLocFilter('')">全て</span>` +
-    locs.map(l=>
-      `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l}</span>`
-    ).join('');
+    locs.map(l=>{
+      const cnt = history.filter(r=>(r.location||'')===l).length;
+      return `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l} <span style="opacity:.7;font-size:.65rem">${cnt}</span></span>`;
+    }).join('');
 }
 
 function setLocFilter(loc){
@@ -1803,9 +1804,10 @@ function updateLocFilterBar(){
   // 「全て」+各ロケーションのチップを生成
   bar.innerHTML =
     `<span class="loc-filter-chip all-chip${_locFilter===''?' active':''}" onclick="setLocFilter('')">全て</span>` +
-    locs.map(l=>
-      `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l}</span>`
-    ).join('');
+    locs.map(l=>{
+      const cnt = history.filter(r=>(r.location||'')===l).length;
+      return `<span class="loc-filter-chip${_locFilter===l?' active':''}" onclick="setLocFilter('${l}')">${l} <span style="opacity:.7;font-size:.65rem">${cnt}</span></span>`;
+    }).join('');
 }
 
 function setLocFilter(loc){
