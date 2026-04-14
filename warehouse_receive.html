@@ -1355,17 +1355,19 @@ function renderHistory(syncFilter){
     const urgency=isOverdue?'⚠ 期限超過':(daysLeft!==null&&daysLeft<=3&&!item.returned&&!item.disposed)?`残${daysLeft}日`:'';
     const locText=item.location?(item.locPending?'⏳ '+esc(item.location):esc(item.location)):'<span style="color:var(--warn)">未定</span>';
     const rowClass=item.disposed?'row-disposed':(isOverdue?'row-overdue':(item.returned?'row-returned':''));
+    // ロケーション: 太字・色付き
+    const locStyle = item.locPending ? 'color:var(--warn);font-weight:700' : 'font-weight:700;font-family:monospace;color:var(--accent2)';
+    const locDisp  = item.location ? `<span style="${locStyle}">${esc(item.location)}</span>` : '<span style="color:var(--warn);font-size:0.75rem">未設定</span>';
     return `<tr class="${rowClass}" onclick="openEditModal(${i})">
-      <td>${item.date||''}</td>
+      <td style="white-space:nowrap">${item.date||''}</td>
       <td class="mono" style="font-size:0.75rem">${esc(item.oldTracking)}</td>
       <td>${esc(item.recipient)}</td>
-      <td style="font-size:0.8rem">${esc(item.itemName)}</td>
-      <td>${locText}</td>
+      <td style="white-space:nowrap;text-align:center">${locDisp}</td>
     </tr>`;
   }).join('');
   container.innerHTML=`<table class="history-table">
     <thead><tr>
-      <th>到着日</th><th>旧送状番号</th><th>氏名</th><th>商品名</th><th>ロケーション</th>
+      <th>到着日</th><th>旧送状番号</th><th>氏名</th><th>ロケ</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
