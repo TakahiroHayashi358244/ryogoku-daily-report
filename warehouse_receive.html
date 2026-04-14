@@ -1046,7 +1046,7 @@ function resizeImage(file,maxWidth){
 }
 async function callClaudeOcrTokens(base64Data){
   const gasUrl=CFG.gasUrl||GAS_DEFAULT;
-  const prompt='この送り状画像のテキストをJSON形式のみで返してください。{"items":["テキスト1","テキスト2",...]}。送り状番号・氏名・住所・品名を優先して抽出してください。';
+  const prompt='この画像は日本の宅配便の返品送り状です。JSON形式のみで返してください。\n{"items":["テキスト1","テキスト2",...]}\n\n【佐川急便の場合の抽出ルール】\n- 旧NO欄の番号 → 旧送り状番号として抽出\n- お問合せ送り状番号欄の番号 → 返送時送り状番号として抽出\n- ご依頼主欄の氏名 → 受取人氏名として抽出（差出人＝返品元の個人名）\n- 品名欄に記載なし → 「ダンボール」として抽出\n- 「長期不在のため」等 → 「長期不在」のように短縮して抽出\n\n【共通ルール】\n- 番号・氏名・住所・品名を優先して抽出\n- 意味のある単位で分割\n- 不要な記号・装飾文字は除外';
   const res=await fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({mode:'ocr',image:base64Data,mimeType:'image/jpeg',prompt})});
   if(!res.ok)throw new Error('GAS error: '+res.status);
   const d=await res.json();
