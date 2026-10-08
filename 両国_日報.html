@@ -458,6 +458,18 @@
     .company-row input.c-name { flex:1; }
     .company-row input.c-rate { width:96px; text-align:right; }
 
+    /* ===== MORE SETTINGS ===== */
+    .more-settings { margin-top:24px; border-top:1px solid #ece9e4; padding-top:14px; }
+    .more-settings summary {
+      list-style:none; cursor:pointer; user-select:none;
+      font-size:13px; font-weight:700; color:var(--muted); padding:6px 0;
+      display:flex; align-items:center; gap:6px;
+    }
+    .more-settings summary::-webkit-details-marker { display:none; }
+    .more-settings summary::before { content:'▼'; font-size:10px; }
+    .more-settings[open] summary::before { content:'▲'; }
+    .more-settings .more-body { padding-top:14px; }
+
     /* ===== EMPTY ===== */
     .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
     .empty-icon { font-size: 40px; margin-bottom: 10px; }
@@ -599,16 +611,7 @@
     </div>
 
     <div class="card" id="settings-content" style="display:none;">
-      <div class="card-title">GAS 接続設定</div>
-      <div class="setting-group">
-        <label class="setting-label">Apps Script URL</label>
-        <input type="text" class="url-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
-        <div class="setting-help">GASウェブアプリのURLを貼り付けてください</div>
-      </div>
-      <button class="btn-submit" onclick="saveConfig()" style="margin-top:0;">保存</button>
-      <button class="btn-secondary" id="testBtn" onclick="testConnection()">接続テスト</button>
-
-      <div class="card-title" style="margin-top:20px;">スポット会社</div>
+      <div class="card-title">スポット会社</div>
       <div class="setting-group">
         <div id="companyList"></div>
         <button class="btn-secondary" onclick="addCompanyRow()" style="margin-top:0;">＋ 会社を追加</button>
@@ -616,12 +619,26 @@
       </div>
       <button class="btn-submit" onclick="saveCompanies()" style="margin-top:0;">スポット会社を保存</button>
 
-      <div class="card-title" style="margin-top:20px;">パスワード変更</div>
-      <div class="setting-group">
-        <label class="setting-label">新しいパスワード</label>
-        <input type="password" id="newPassword" placeholder="新しいパスワード" style="width:100%;padding:13px 14px;border:1.5px solid #e0ddd8;border-radius:12px;font-size:17px;background:var(--pale);">
-      </div>
-      <button class="btn-secondary" onclick="changePassword()">パスワード変更</button>
+      <details class="more-settings" id="moreSettings">
+        <summary>その他の設定（GAS接続・パスワード）</summary>
+        <div class="more-body">
+          <div class="card-title">GAS 接続設定</div>
+          <div class="setting-group">
+            <label class="setting-label">Apps Script URL</label>
+            <input type="text" class="url-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+            <div class="setting-help">GASウェブアプリのURLを貼り付けてください</div>
+          </div>
+          <button class="btn-submit" onclick="saveConfig()" style="margin-top:0;">保存</button>
+          <button class="btn-secondary" id="testBtn" onclick="testConnection()">接続テスト</button>
+
+          <div class="card-title" style="margin-top:20px;">パスワード変更</div>
+          <div class="setting-group">
+            <label class="setting-label">新しいパスワード</label>
+            <input type="password" id="newPassword" placeholder="新しいパスワード" style="width:100%;padding:13px 14px;border:1.5px solid #e0ddd8;border-radius:12px;font-size:17px;background:var(--pale);">
+          </div>
+          <button class="btn-secondary" onclick="changePassword()">パスワード変更</button>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -1215,6 +1232,8 @@ function getPassword() {
 
 function initSettingsTab() {
   renderCompanyList();
+  // その他の設定は通常は閉じる（GAS URL未設定の初回だけ開く）
+  document.getElementById('moreSettings').open = !config?.scriptUrl;
   document.getElementById('password-gate').style.display    = settingsAuthenticated ? 'none'  : 'block';
   document.getElementById('settings-content').style.display = settingsAuthenticated ? 'block' : 'none';
   if (!settingsAuthenticated) {
