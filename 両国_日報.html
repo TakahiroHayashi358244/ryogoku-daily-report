@@ -615,9 +615,9 @@
       <div class="setting-group">
         <div id="companyList"></div>
         <button class="btn-secondary" onclick="addCompanyRow()" style="margin-top:0;">＋ 会社を追加</button>
-        <div class="setting-help">会社名と時給（円）を登録します。日報のスポット欄で選択できます。この端末に保存されます。</div>
+        <div class="setting-help">会社名と時給（円）を登録します。スプレッドシートに保存され、全部のスマホで共通です。</div>
       </div>
-      <button class="btn-submit" onclick="saveCompanies()" style="margin-top:0;">スポット会社を保存</button>
+      <button class="btn-submit" id="saveCompaniesBtn" onclick="saveCompanies()" style="margin-top:0;">スポット会社を保存</button>
 
       <details class="more-settings" id="moreSettings">
         <summary>その他の設定（GAS接続・パスワード）</summary>
@@ -700,12 +700,16 @@ function fetchAndBuildStaff() {
       if (json.success && json.data?.staff?.length) {
         STAFF = json.data.staff;
         localStorage.setItem('ryogoku_staff_cache', JSON.stringify(STAFF));
+        buildStaffList();   // 先に出勤者リストを作る（スポット反映で確認欄を更新するため）
         if (json.data.spot && typeof json.data.spot.freeCount === 'number') {
           spotFreeCount = json.data.spot.freeCount;
           localStorage.setItem('ryogoku_spot_free', String(spotFreeCount));
           renderSpotHint();
         }
-        buildStaffList();
+        // スポット会社（スプレッドシートの共通一覧）。空のときは手元の一覧を残す
+        if (Array.isArray(json.data.spot?.companies) && json.data.spot.companies.length) {
+          applyCompanies(json.data.spot.companies);
+        }
         console.log('スタッフ一覧を更新:', STAFF.length + '名');
       }
     } catch(e) {
@@ -1056,6 +1060,32 @@ function loadCompanies() {
   try { spotCompanies = JSON.parse(localStorage.getItem('ryogoku_spot_companies') || '[]'); }
   catch (e) { spotCompanies = []; }
 }
+// 共通一覧を反映（入力中のスポット行はそのまま、消えた会社だけ先頭に寄せる）
+function applyCompanies(list) {
+  spotCompanies = list.map(c => ({ name: String(c.name), rate: Number(c.rate) || 0 }));
+  try { localStorage.setItem('ryogoku_spot_companies', JSON.stringify(spotCompanies)); } catch (e) {}
+  spotRows.forEach(r => { if (!spotCompanies.some(x => x.name === r.company)) r.company = spotCompanies[0]?.name || ''; });
+  renderSpotRows();
+  updatePreview();
+  if (document.getElementById('settings-content')?.style.display !== 'block') renderCompanyList();
+}
+
+// GASをJSONPで呼ぶ（CORS回避）
+function gasJsonp(params) {
+  return new Promise((resolve, reject) => {
+    if (!config?.scriptUrl) { reject(new Error('GAS URLが未設定です')); return; }
+    const cb = '_gasCb_' + Date.now();
+    const sc = document.createElement('script');
+    const q  = new URLSearchParams({ ...params, callback: cb });
+    const timer = setTimeout(() => { cleanup(); reject(new Error('タイムアウト')); }, 20000);
+    function cleanup() { clearTimeout(timer); delete window[cb]; sc.remove(); }
+    window[cb] = res => { cleanup(); resolve(res); };
+    sc.onerror = () => { cleanup(); reject(new Error('接続エラー')); };
+    sc.src = config.scriptUrl + '?' + q.toString();
+    document.head.appendChild(sc);
+  });
+}
+
 function getCompanyRate(name) {
   const c = spotCompanies.find(x => x.name === name);
   return c ? Number(c.rate) || 0 : 0;
@@ -1090,7 +1120,7 @@ function renderSpotRows() {
   const box = document.getElementById('spotRows');
   const addBtn = document.getElementById('spotAddBtn');
   if (spotCompanies.length === 0) {
-    box.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:6px 0;">設定タブでスポット会社を登録すると入力できます</div>';
+    box.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:6px 0;">スポット会社が未登録です（管理者が設定タブで登録）</div>';
     addBtn.style.display = 'none';
     renderSpotHint();
     return;
@@ -1207,7 +1237,7 @@ function addCompanyRow() {
   companyDraft.push({ name: '', rate: '' });
   drawCompanyList();
 }
-function saveCompanies() {
+async function saveCompanies() {
   const list = [];
   for (const c of companyDraft) {
     const name = String(c.name || '').trim();
@@ -1218,14 +1248,21 @@ function saveCompanies() {
     if (list.some(x => x.name === name)) { alert(`${name} が重複しています`); return; }
     list.push({ name, rate });
   }
-  spotCompanies = list;
-  localStorage.setItem('ryogoku_spot_companies', JSON.stringify(list));
-  // 入力中の行で、削除された会社を選んでいたら先頭に寄せる
-  spotRows.forEach(r => { if (!list.some(x => x.name === r.company)) r.company = list[0]?.name || ''; });
-  renderSpotRows();
-  updatePreview();
-  renderCompanyList();
-  alert('保存しました');
+  if (list.length === 0 && !confirm('スポット会社が0社になります。保存しますか？')) return;
+
+  const btn = document.getElementById('saveCompaniesBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+  try {
+    const res = await gasJsonp({ action: 'updateSpotCompanies', data: JSON.stringify({ companies: list }) });
+    if (!res.success) throw new Error(res.message);
+    applyCompanies(res.data.companies);
+    renderCompanyList();
+    alert(res.message + '\n全部のスマホで共通になります');
+  } catch (e) {
+    alert('保存できませんでした：' + e.message + '\n電波を確認して、もう一度保存してください');
+  } finally {
+    btn.disabled = false; btn.textContent = 'スポット会社を保存';
+  }
 }
 
 // パスワード機能
