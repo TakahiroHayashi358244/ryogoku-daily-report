@@ -424,7 +424,6 @@
       border:1.5px solid #e0ddd8; border-radius:14px; padding:10px 12px;
       background:#fff; display:flex; flex-direction:column; gap:8px;
     }
-    .spot-row.billable { border-color: var(--gold); background:#fff7f8; }
     .spot-line { display:flex; align-items:center; gap:8px; }
     .spot-row select {
       flex:1; min-width:0; padding:10px 12px; border:1.5px solid #e0ddd8; border-radius:10px;
@@ -442,7 +441,6 @@
       border:1.5px solid #e0ddd8; font-size:13px; font-weight:700; color:var(--muted);
       cursor:pointer; user-select:none; white-space:nowrap;
     }
-    .spot-row.billable .spot-bill { border-color:var(--gold); background:var(--gold); color:#fff; }
     .spot-bill input { display:none; }
     .spot-del {
       border:none; background:none; color:var(--muted); font-size:20px; line-height:1;
@@ -793,7 +791,7 @@ function updatePreview() {
   document.getElementById('prev-spot-row').style.display = t.persons > 0 ? 'flex' : 'none';
   document.getElementById('prev-bill-row').style.display = t.persons > 0 ? 'flex' : 'none';
   document.getElementById('prev-spot').textContent = `${t.persons}名 / ${fmtH(t.manHours)}人時`;
-  document.getElementById('prev-bill').textContent = `${t.billPersons}名 / ${fmtH(t.billHours)}h`;
+  document.getElementById('prev-bill').textContent = `${t.billPersons}名`;
 }
 
 function getCheckedStaff() {
@@ -926,7 +924,7 @@ function renderLogs() {
         </div>
         <div class="log-row"><span class="log-key">個数</span><span class="log-val">${r.unitCount.toLocaleString()} 個</span></div>
         <div class="log-row"><span class="log-key">出勤者</span><span class="log-val">${names}</span></div>
-        ${(r.spot && r.spot.length) ? `<div class="log-row"><span class="log-key">スポット</span><span class="log-val">${r.spot.map((x, k) => `${escHtml(x.company)} ${x.hours}h×${x.persons}名${k > 0 && x.billable ? '（請求オン）' : ''}`).join('<br>')}</span></div>` : ''}
+        ${(r.spot && r.spot.length) ? `<div class="log-row"><span class="log-key">スポット</span><span class="log-val">${r.spot.map(x => `${escHtml(x.company)} ${x.hours}h×${x.persons}名`).join('<br>')}</span></div>` : ''}
       </div>`;
   }).join('');
 }
@@ -1046,7 +1044,7 @@ function switchTab(name, btn) {
 // スポット
 // ============================================================
 let spotCompanies = [];   // [{ name, rate }]  ※端末（localStorage）に保存
-let spotRows      = [];   // [{ company, hours, persons, billable }]
+let spotRows      = [];   // [{ company, hours, persons }]
 let spotFreeCount = Number(localStorage.getItem('ryogoku_spot_free') || 3);
 
 function escHtml(v) {
@@ -1064,13 +1062,13 @@ function getCompanyRate(name) {
 }
 
 function resetSpotRows() {
-  spotRows = [{ company: spotCompanies[0]?.name || '', hours: '', persons: '', billable: false }];
+  spotRows = [{ company: spotCompanies[0]?.name || '', hours: '', persons: '' }];
   renderSpotRows();
 }
 function addSpotRow() {
   if (spotCompanies.length === 0) { alert('設定タブでスポット会社を登録してください'); return; }
   const prev = spotRows[spotRows.length - 1];
-  spotRows.push({ company: prev?.company || spotCompanies[0].name, hours: prev?.hours || '', persons: '', billable: false });
+  spotRows.push({ company: prev?.company || spotCompanies[0].name, hours: prev?.hours || '', persons: '' });
   renderSpotRows();
 }
 function deleteSpotRow(i) {
@@ -1080,9 +1078,6 @@ function deleteSpotRow(i) {
 }
 function setSpotField(i, field, value) {
   spotRows[i][field] = value;
-  if (field === 'billable') {
-    document.getElementById(`spot-${i}`).classList.toggle('billable', value);
-  }
   if (field === 'company') {
     document.getElementById(`spot-rate-${i}`).textContent = `時給 ¥${getCompanyRate(value).toLocaleString()}`;
   }
@@ -1104,13 +1099,10 @@ function renderSpotRows() {
   const opts = (sel) => spotCompanies.map(c =>
     `<option value="${escHtml(c.name)}" ${c.name === sel ? 'selected' : ''}>${escHtml(c.name)}</option>`).join('');
   box.innerHTML = spotRows.map((r, i) => `
-    <div class="spot-row ${i > 0 && r.billable ? 'billable' : ''}" id="spot-${i}">
+    <div class="spot-row" id="spot-${i}">
       <div class="spot-line">
         <select onchange="setSpotField(${i}, 'company', this.value)">${opts(r.company)}</select>
         <span class="spot-billinfo" id="spot-billinfo-${i}"></span>
-        ${i === 0 ? '' : `<label class="spot-bill">
-          <input type="checkbox" ${r.billable ? 'checked' : ''} onchange="setSpotField(${i}, 'billable', this.checked)">請求
-        </label>`}
         <button class="spot-del" onclick="deleteSpotRow(${i})" aria-label="行を削除">×</button>
       </div>
       <div class="spot-line">
@@ -1136,8 +1128,7 @@ function renderSpotBillInfo() {
 }
 
 // 請求人数の計算（GASの calcSpot_ と同じルール）
-//   当社負担枠を上の行から順に割り当て、あふれた人数のうち
-//   1行目／「請求」オンの行の分だけを請求する。合計が負担人数以内なら請求0
+//   当社負担枠を上の行から順に割り当て、あふれた人数をすべて請求（行・会社に関係なし）
 function getSpotTotals() {
   let persons = 0, manHours = 0, billPersons = 0, billHours = 0;
   let freeLeft = Math.max(0, spotFreeCount);
@@ -1148,13 +1139,13 @@ function getSpotTotals() {
     persons += p; manHours += h * p;
     const free = Math.min(freeLeft, p);
     freeLeft -= free;
-    const bp = isSpotBillable(i) ? p - free : 0;
+    const bp = p - free;
     billPersons += bp; billHours += bp * h;
     return bp;
   });
   return { persons, manHours, billPersons, billHours, rowBill };
 }
-function isSpotBillable(i) { return i === 0 ? true : !!spotRows[i].billable; }
+
 
 function renderSpotHint() {
   const el = document.getElementById('spotHint');
@@ -1162,11 +1153,11 @@ function renderSpotHint() {
   const t = getSpotTotals();
   el.className = 'spot-hint';
   if (t.persons === 0) {
-    el.textContent = `当社負担は${spotFreeCount}名まで（上の行から順に充当）。1行目は超過分を自動で請求、時間が違う人は行を追加して「請求」の有無を選んでください。`;
+    el.textContent = `当社負担は合計${spotFreeCount}名まで。超えた人数は自動で請求になります（会社・時間が違う人は行を追加）。`;
     return;
   }
   const free = Math.min(t.persons, spotFreeCount);
-  el.textContent = `合計 ${t.persons}名・${fmtH(t.manHours)}人時 ／ 当社負担 ${free}名 ／ 請求 ${t.billPersons}名・${fmtH(t.billHours)}h`;
+  el.textContent = `合計 ${t.persons}名・${fmtH(t.manHours)}人時 ／ 当社負担 ${free}名 ／ 請求 ${t.billPersons}名`;
 }
 
 function validateSpot() {
@@ -1188,8 +1179,7 @@ function getSpotPayload() {
       company:    r.company,
       hours:      Number(r.hours) || 0,
       persons:    Math.floor(Number(r.persons) || 0),
-      hourlyRate: getCompanyRate(r.company),
-      billable:   isSpotBillable(i)   // 1行目は常に請求候補
+      hourlyRate: getCompanyRate(r.company)   // 経費計算用（会社ごと）
     }))
     .filter(r => r.hours > 0 && r.persons > 0);
 }
