@@ -418,6 +418,46 @@
       background: #fff;
     }
 
+    /* ===== SPOT ===== */
+    .spot-list { display:flex; flex-direction:column; gap:10px; }
+    .spot-row {
+      border:1.5px solid #e0ddd8; border-radius:14px; padding:10px 12px;
+      background:#fff; display:flex; flex-direction:column; gap:8px;
+    }
+    .spot-row.billable { border-color: var(--gold); background:#fff7f8; }
+    .spot-line { display:flex; align-items:center; gap:8px; }
+    .spot-row select {
+      flex:1; min-width:0; padding:10px 12px; border:1.5px solid #e0ddd8; border-radius:10px;
+      font-size:15px; background:var(--pale); color:var(--ink); -webkit-appearance:none;
+    }
+    .spot-row input[type="number"] {
+      width:76px; padding:10px; border:1.5px solid #e0ddd8; border-radius:10px;
+      font-size:17px; background:var(--pale); color:var(--ink);
+    }
+    .spot-row input:focus, .spot-row select:focus { outline:none; border-color:var(--accent); background:#fff; }
+    .spot-unit { font-size:13px; color:var(--muted); white-space:nowrap; }
+    .spot-rate { margin-left:auto; font-size:12px; color:var(--muted); white-space:nowrap; }
+    .spot-bill {
+      display:flex; align-items:center; gap:4px; padding:8px 10px; border-radius:10px;
+      border:1.5px solid #e0ddd8; font-size:13px; font-weight:700; color:var(--muted);
+      cursor:pointer; user-select:none; white-space:nowrap;
+    }
+    .spot-row.billable .spot-bill { border-color:var(--gold); background:var(--gold); color:#fff; }
+    .spot-bill input { display:none; }
+    .spot-del {
+      border:none; background:none; color:var(--muted); font-size:20px; line-height:1;
+      padding:4px 6px; cursor:pointer;
+    }
+    .spot-hint { font-size:12px; color:var(--muted); margin-top:10px; line-height:1.6; }
+    .spot-hint.warn { color:var(--gold); font-weight:700; }
+    .company-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .company-row input {
+      padding:11px 12px; border:1.5px solid #e0ddd8; border-radius:10px; font-size:15px;
+      background:var(--pale); color:var(--ink); min-width:0;
+    }
+    .company-row input.c-name { flex:1; }
+    .company-row input.c-rate { width:96px; text-align:right; }
+
     /* ===== EMPTY ===== */
     .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
     .empty-icon { font-size: 40px; margin-bottom: 10px; }
@@ -472,6 +512,15 @@
     </div>
 
     <div class="card">
+      <div class="card-title">スポット</div>
+      <div class="spot-list" id="spotRows">
+        <!-- JS で生成 -->
+      </div>
+      <button class="btn-secondary" id="spotAddBtn" onclick="addSpotRow()">＋ 行を追加</button>
+      <div class="spot-hint" id="spotHint"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">送信前確認</div>
       <div class="preview" id="preview">
         <div class="preview-row">
@@ -481,6 +530,14 @@
         <div class="preview-row">
           <span class="preview-label">個数</span>
           <span class="preview-value" id="prev-units">-</span>
+        </div>
+        <div class="preview-row" id="prev-spot-row" style="display:none;">
+          <span class="preview-label">スポット</span>
+          <span class="preview-value" id="prev-spot">-</span>
+        </div>
+        <div class="preview-row" id="prev-bill-row" style="display:none;">
+          <span class="preview-label">請求対象</span>
+          <span class="preview-value" id="prev-bill">-</span>
         </div>
       </div>
       <div id="preview-placeholder" style="color:var(--muted);font-size:13px;text-align:center;padding:10px 0;">
@@ -549,7 +606,15 @@
         <div class="setting-help">GASウェブアプリのURLを貼り付けてください</div>
       </div>
       <button class="btn-submit" onclick="saveConfig()" style="margin-top:0;">保存</button>
-      <button class="btn-secondary" onclick="testConnection()">接続テスト</button>
+      <button class="btn-secondary" id="testBtn" onclick="testConnection()">接続テスト</button>
+
+      <div class="card-title" style="margin-top:20px;">スポット会社</div>
+      <div class="setting-group">
+        <div id="companyList"></div>
+        <button class="btn-secondary" onclick="addCompanyRow()" style="margin-top:0;">＋ 会社を追加</button>
+        <div class="setting-help">会社名と時給（円）を登録します。日報のスポット欄で選択できます。この端末に保存されます。</div>
+      </div>
+      <button class="btn-submit" onclick="saveCompanies()" style="margin-top:0;">スポット会社を保存</button>
 
       <div class="card-title" style="margin-top:20px;">パスワード変更</div>
       <div class="setting-group">
@@ -582,6 +647,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
   loadLogs();
   renderLogs();
+  // スポット
+  loadCompanies();
+  resetSpotRows();
   // GASからスタッフ一覧を取得してフォームを構築
   fetchAndBuildStaff();
 });
@@ -615,6 +683,11 @@ function fetchAndBuildStaff() {
       if (json.success && json.data?.staff?.length) {
         STAFF = json.data.staff;
         localStorage.setItem('ryogoku_staff_cache', JSON.stringify(STAFF));
+        if (json.data.spot && typeof json.data.spot.freeCount === 'number') {
+          spotFreeCount = json.data.spot.freeCount;
+          localStorage.setItem('ryogoku_spot_free', String(spotFreeCount));
+          renderSpotHint();
+        }
         buildStaffList();
         console.log('スタッフ一覧を更新:', STAFF.length + '名');
       }
@@ -696,6 +769,13 @@ function updatePreview() {
   ph.style.display = 'none';
   document.getElementById('prev-count').textContent = checked.length + '名';
   document.getElementById('prev-units').textContent = units.toLocaleString() + ' 個';
+
+  const t = getSpotTotals();
+  document.getElementById('prev-spot-row').style.display = t.persons > 0 ? 'flex' : 'none';
+  document.getElementById('prev-bill-row').style.display = t.persons > 0 ? 'flex' : 'none';
+  document.getElementById('prev-spot').textContent = `${t.persons}名 / ${fmtH(t.manHours)}人時`;
+  document.getElementById('prev-bill').textContent =
+    `${t.billPersons}名 / ${fmtH(t.billHours)}h` + (t.billPersons !== t.expected ? `（目安${t.expected}名）` : '');
 }
 
 function getCheckedStaff() {
@@ -732,7 +812,16 @@ async function submitReport() {
     }
   }
 
-  const payload = { date, unitCount, staff };
+  // スポット
+  const spotCheck = validateSpot();
+  if (!spotCheck.ok) { alert(spotCheck.message); return; }
+  const spot = getSpotPayload();
+  const st = getSpotTotals();
+  if (st.persons > 0 && st.billPersons !== st.expected) {
+    if (!confirm(`スポット${st.persons}名のうち請求対象が${st.billPersons}名です。\n（当社負担${spotFreeCount}名まで → 目安${st.expected}名）\n\nこのまま送信しますか？`)) return;
+  }
+
+  const payload = { date, unitCount, staff, spot };
 
   // ローカル保存
   const record = { ...payload, synced: false, timestamp: new Date().toISOString() };
@@ -796,6 +885,7 @@ function resetForm() {
   setTodayDate();
   document.getElementById('unitCount').value = '';
   document.querySelectorAll('.staff-item').forEach(el => el.classList.remove('checked'));
+  resetSpotRows();
   document.getElementById('preview').classList.remove('show');
   document.getElementById('preview-placeholder').style.display = 'block';
 }
@@ -822,6 +912,7 @@ function renderLogs() {
         </div>
         <div class="log-row"><span class="log-key">個数</span><span class="log-val">${r.unitCount.toLocaleString()} 個</span></div>
         <div class="log-row"><span class="log-key">出勤者</span><span class="log-val">${names}</span></div>
+        ${(r.spot && r.spot.length) ? `<div class="log-row"><span class="log-key">スポット</span><span class="log-val">${r.spot.map(x => `${escHtml(x.company)} ${x.hours}h×${x.persons}名${x.billable ? '（請求）' : ''}`).join('<br>')}</span></div>` : ''}
       </div>`;
   }).join('');
 }
@@ -852,7 +943,7 @@ function loadConfig() {
 async function testConnection() {
   if (!config?.scriptUrl) { alert('URLを設定してください'); return; }
 
-  const btn = document.querySelector('.btn-secondary');
+  const btn = document.getElementById('testBtn');
   if (btn) { btn.textContent = 'テスト中...'; btn.disabled = true; }
 
   try {
@@ -937,6 +1028,184 @@ function switchTab(name, btn) {
   if (name === 'staff')    initStaffTab();
 }
 
+// ============================================================
+// スポット
+// ============================================================
+let spotCompanies = [];   // [{ name, rate }]  ※端末（localStorage）に保存
+let spotRows      = [];   // [{ company, hours, persons, billable }]
+let spotFreeCount = Number(localStorage.getItem('ryogoku_spot_free') || 3);
+
+function escHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function fmtH(n) { return (Math.round(n * 100) / 100).toString(); }
+
+function loadCompanies() {
+  try { spotCompanies = JSON.parse(localStorage.getItem('ryogoku_spot_companies') || '[]'); }
+  catch (e) { spotCompanies = []; }
+}
+function getCompanyRate(name) {
+  const c = spotCompanies.find(x => x.name === name);
+  return c ? Number(c.rate) || 0 : 0;
+}
+
+function resetSpotRows() {
+  spotRows = [{ company: spotCompanies[0]?.name || '', hours: '', persons: '', billable: false }];
+  renderSpotRows();
+}
+function addSpotRow() {
+  if (spotCompanies.length === 0) { alert('設定タブでスポット会社を登録してください'); return; }
+  const prev = spotRows[spotRows.length - 1];
+  spotRows.push({ company: prev?.company || spotCompanies[0].name, hours: prev?.hours || '', persons: '', billable: false });
+  renderSpotRows();
+}
+function deleteSpotRow(i) {
+  spotRows.splice(i, 1);
+  if (spotRows.length === 0) { resetSpotRows(); return; }
+  renderSpotRows();
+}
+function setSpotField(i, field, value) {
+  spotRows[i][field] = value;
+  if (field === 'billable') {
+    document.getElementById(`spot-${i}`).classList.toggle('billable', value);
+  }
+  if (field === 'company') {
+    document.getElementById(`spot-rate-${i}`).textContent = `時給 ¥${getCompanyRate(value).toLocaleString()}`;
+  }
+  renderSpotHint();
+  updatePreview();
+}
+
+function renderSpotRows() {
+  const box = document.getElementById('spotRows');
+  const addBtn = document.getElementById('spotAddBtn');
+  if (spotCompanies.length === 0) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:6px 0;">設定タブでスポット会社を登録すると入力できます</div>';
+    addBtn.style.display = 'none';
+    renderSpotHint();
+    return;
+  }
+  addBtn.style.display = '';
+  const opts = (sel) => spotCompanies.map(c =>
+    `<option value="${escHtml(c.name)}" ${c.name === sel ? 'selected' : ''}>${escHtml(c.name)}</option>`).join('');
+  box.innerHTML = spotRows.map((r, i) => `
+    <div class="spot-row ${r.billable ? 'billable' : ''}" id="spot-${i}">
+      <div class="spot-line">
+        <select onchange="setSpotField(${i}, 'company', this.value)">${opts(r.company)}</select>
+        <label class="spot-bill">
+          <input type="checkbox" ${r.billable ? 'checked' : ''} onchange="setSpotField(${i}, 'billable', this.checked)">請求
+        </label>
+        <button class="spot-del" onclick="deleteSpotRow(${i})" aria-label="行を削除">×</button>
+      </div>
+      <div class="spot-line">
+        <input type="number" inputmode="decimal" min="0" step="0.25" placeholder="8" value="${escHtml(r.hours)}"
+               oninput="setSpotField(${i}, 'hours', this.value)">
+        <span class="spot-unit">時間 ×</span>
+        <input type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${escHtml(r.persons)}"
+               oninput="setSpotField(${i}, 'persons', this.value)">
+        <span class="spot-unit">名</span>
+        <span class="spot-rate" id="spot-rate-${i}">時給 ¥${getCompanyRate(r.company).toLocaleString()}</span>
+      </div>
+    </div>`).join('');
+  renderSpotHint();
+}
+
+function getSpotTotals() {
+  let persons = 0, manHours = 0, billPersons = 0, billHours = 0;
+  for (const r of spotRows) {
+    const h = Number(r.hours) || 0;
+    const p = Math.floor(Number(r.persons) || 0);
+    if (h <= 0 || p <= 0) continue;
+    persons += p; manHours += h * p;
+    if (r.billable) { billPersons += p; billHours += h * p; }
+  }
+  return { persons, manHours, billPersons, billHours, expected: Math.max(0, persons - spotFreeCount) };
+}
+
+function renderSpotHint() {
+  const el = document.getElementById('spotHint');
+  if (!el) return;
+  const t = getSpotTotals();
+  if (t.persons === 0) {
+    el.className = 'spot-hint';
+    el.textContent = `当社負担は${spotFreeCount}名まで。4人目以降の行は「請求」をオンにしてください（時間が違う人は行を分けて入力）。`;
+    return;
+  }
+  const ok = t.billPersons === t.expected;
+  el.className = 'spot-hint' + (ok ? '' : ' warn');
+  el.textContent = `合計 ${t.persons}名・${fmtH(t.manHours)}人時 ／ 請求対象 ${t.billPersons}名・${fmtH(t.billHours)}h`
+    + (ok ? '' : `（目安 ${t.expected}名）`);
+}
+
+function validateSpot() {
+  for (const r of spotRows) {
+    const h = Number(r.hours) || 0;
+    const p = Math.floor(Number(r.persons) || 0);
+    if (!r.hours && !r.persons) continue;          // 空行は無視
+    if (p <= 0) return { ok: false, message: 'スポットの人数を入力してください（不要な行は×で削除）' };
+    if (h <= 0 || h > 24) return { ok: false, message: 'スポットの時間を正しく入力してください' };
+    if (!r.company) return { ok: false, message: 'スポットの会社を選択してください' };
+    if (getCompanyRate(r.company) <= 0) return { ok: false, message: `${r.company} の時給が未設定です（設定タブ）` };
+  }
+  return { ok: true };
+}
+
+function getSpotPayload() {
+  return spotRows
+    .filter(r => (Number(r.hours) || 0) > 0 && Math.floor(Number(r.persons) || 0) > 0)
+    .map(r => ({
+      company:    r.company,
+      hours:      Number(r.hours),
+      persons:    Math.floor(Number(r.persons)),
+      hourlyRate: getCompanyRate(r.company),
+      billable:   !!r.billable
+    }));
+}
+
+// --- 設定タブ：スポット会社 ---
+let companyDraft = [];
+function renderCompanyList() {
+  companyDraft = spotCompanies.map(c => ({ ...c }));
+  drawCompanyList();
+}
+function drawCompanyList() {
+  const box = document.getElementById('companyList');
+  if (companyDraft.length === 0) {
+    box.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:4px 0 10px;">未登録です</div>';
+    return;
+  }
+  box.innerHTML = companyDraft.map((c, i) => `
+    <div class="company-row">
+      <input class="c-name" type="text" placeholder="会社名" value="${escHtml(c.name)}" oninput="companyDraft[${i}].name=this.value">
+      <input class="c-rate" type="number" inputmode="numeric" min="0" placeholder="時給" value="${escHtml(c.rate)}" oninput="companyDraft[${i}].rate=this.value">
+      <button class="spot-del" onclick="companyDraft.splice(${i},1);drawCompanyList();" aria-label="削除">×</button>
+    </div>`).join('');
+}
+function addCompanyRow() {
+  companyDraft.push({ name: '', rate: '' });
+  drawCompanyList();
+}
+function saveCompanies() {
+  const list = [];
+  for (const c of companyDraft) {
+    const name = String(c.name || '').trim();
+    const rate = Number(c.rate) || 0;
+    if (!name && !rate) continue;
+    if (!name) { alert('会社名を入力してください'); return; }
+    if (rate <= 0) { alert(`${name} の時給を入力してください`); return; }
+    if (list.some(x => x.name === name)) { alert(`${name} が重複しています`); return; }
+    list.push({ name, rate });
+  }
+  spotCompanies = list;
+  localStorage.setItem('ryogoku_spot_companies', JSON.stringify(list));
+  // 入力中の行で、削除された会社を選んでいたら先頭に寄せる
+  spotRows.forEach(r => { if (!list.some(x => x.name === r.company)) r.company = list[0]?.name || ''; });
+  renderSpotRows();
+  updatePreview();
+  renderCompanyList();
+  alert('保存しました');
+}
+
 // パスワード機能
 const DEFAULT_PASSWORD = '1124';
 
@@ -945,6 +1214,7 @@ function getPassword() {
 }
 
 function initSettingsTab() {
+  renderCompanyList();
   document.getElementById('password-gate').style.display    = settingsAuthenticated ? 'none'  : 'block';
   document.getElementById('settings-content').style.display = settingsAuthenticated ? 'block' : 'none';
   if (!settingsAuthenticated) {
